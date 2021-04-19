@@ -29,9 +29,9 @@ class Room {
 }
 
 class Player {
-  constructor(playerName, socketId, points) {
-    this.playerName = playerName;
+  constructor(socketId, playerName, points) {
     this.socketId = socketId;
+    this.playerName = playerName;
     this.points = points || 0;
   }
 }
@@ -78,6 +78,7 @@ io.on("connection", (socket) => {
     let room = rooms.find((room) => room.roomName === data.roomName);
 
     if (!room) {
+      console.log("Room not found!");
       socket.emit("Entry denied", { message: "Room not found." });
       return;
     }
@@ -85,6 +86,7 @@ io.on("connection", (socket) => {
     if (
       room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
     ) {
+      console.log(`${socket.id.slice(0, 5)} already in ${room.roomName}.`);
       return;
     }
 
@@ -92,11 +94,36 @@ io.on("connection", (socket) => {
       `Socket ${socket.id.slice(0, 5)} has entered room ${room.roomName}.`
     );
     room.players.push(player);
+    console.log("rooms", rooms);
     socket.join(room.roomName);
     socket.emit("Entry granted", {
       roomName: room.roomName,
       playerList: room.players,
     });
+
+    if (true) {
+      setTimeout(() => {
+        console.log("entry granted again");
+        socket.emit("Entry granted", {
+          roomName: room.roomName,
+          playerList: room.players,
+        });
+      }, 1000);
+      setTimeout(() => {
+        console.log("entry granted again");
+        socket.emit("Entry granted", {
+          roomName: room.roomName,
+          playerList: room.players,
+        });
+      }, 2000);
+      setTimeout(() => {
+        console.log("entry granted again");
+        socket.emit("Entry granted", {
+          roomName: room.roomName,
+          playerList: room.players,
+        });
+      }, 3000);
+    }
   });
 
   socket.on("Leave room", function (data) {
@@ -111,6 +138,9 @@ io.on("connection", (socket) => {
       return;
     }
 
+    console.log(
+      `Socket ${socket.id.slice(0, 5)} is leaving room ${data.roomName}`
+    );
     room.players = room.players.filter(
       (roomPlayer) => roomPlayer.socketId !== player.socketId
     );
