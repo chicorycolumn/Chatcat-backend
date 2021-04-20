@@ -57,6 +57,21 @@ io.on("connection", (socket) => {
     console.log(data);
   });
 
+  socket.on("Hello to all", function (data) {
+    let senderId = socket.id;
+    let room = rooms.find((room) =>
+      room.players.find((roomPlayer) => roomPlayer.socketId === senderId)
+    );
+    let msg = `Hello to all from ${senderId.slice(0, 5)}.`;
+
+    if (room) {
+      console.log(msg);
+      io.in(room.roomName).emit("Hello to all", { msg });
+    } else {
+      console.log(`Found no room for ${senderId.slice(0, 5)}!`);
+    }
+  });
+
   socket.on("Create room", function (data) {
     console.log(`Let us create a room called "${data.roomName}"`);
 
@@ -98,10 +113,14 @@ io.on("connection", (socket) => {
     socket.join(room.roomName);
     socket.emit("Entry granted", {
       roomName: room.roomName,
-      playerList: room.players,
+      roomData: room,
+    });
+    io.in(room.roomName).emit("Player entered your room", {
+      playerId: socket.id,
+      roomData: room,
     });
 
-    if (true) {
+    if (false) {
       setTimeout(() => {
         console.log("entry granted again");
         socket.emit("Entry granted", {
