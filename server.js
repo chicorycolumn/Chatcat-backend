@@ -84,6 +84,21 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("Chat message", function (data) {
+    let room = rooms.find((room) =>
+      room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)
+    );
+
+    if (!room) {
+      console.log("No such room to emit chat message to.");
+      return;
+    }
+
+    data.sender = trimmedPlayer(player);
+
+    io.in(room.roomName).emit("Chat message", data);
+  });
+
   socket.on("Hello to all", function (data) {
     let senderId = socket.id;
     let room = rooms.find((room) =>
