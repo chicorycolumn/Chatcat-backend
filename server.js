@@ -18,7 +18,7 @@ const io = require("socket.io")(httpServer, options);
 
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
-const rooms = [];
+let rooms = [];
 
 function trimmedPlayer(original) {
   let newObj = {};
@@ -84,10 +84,16 @@ io.on("connection", (socket) => {
     });
   });
 
+  function roomsBySocket() {
+    return [...io.sockets.adapter.rooms.entries()];
+  }
+
   socket.on("Chat message", function (data) {
-    let room = rooms.find((room) =>
-      room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)
-    );
+    let roomName = roomsBySocket().find(
+      (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
+    )[0];
+
+    let room = rooms.find((roo) => roo.roomName === roomName);
 
     if (!room) {
       console.log("No such room to emit chat message to.");
@@ -204,4 +210,9 @@ function makePlayerLeaveRoom(socket, player, data) {
     room: trimmedRoom(room),
   });
   socket.leave(room.roomName);
+
+  if (!room.players.length) {
+    console.log(`Deleting room ${room.roomName}.`);
+    rooms = rooms.filter((roo) => roo.roomName !== room.roomName);
+  }
 }
