@@ -20,6 +20,27 @@ httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
 const rooms = [];
 
+function trimmedPlayer(original) {
+  let newObj = {};
+  let publicProperties = ["socketId", "playerName"];
+  publicProperties.forEach((property) => {
+    newObj[property] = original[property];
+  });
+  return newObj;
+}
+
+function trimmedRoom(original) {
+  let newObj = {};
+  let publicProperties = ["roomName"];
+  publicProperties.forEach((property) => {
+    newObj[property] = original[property];
+  });
+  newObj["players"] = original.players.map((roomPlayer) =>
+    trimmedPlayer(roomPlayer)
+  );
+  return newObj;
+}
+
 class Room {
   constructor(roomName, players, questions) {
     this.roomName = roomName;
@@ -37,7 +58,7 @@ class Player {
 }
 
 io.on("connection", (socket) => {
-  let player = new Player(socket.id, socket.id.slice(0, 5));
+  let player = new Player(socket.id);
 
   console.log(
     `Socket ${socket.id.slice(
@@ -53,13 +74,13 @@ io.on("connection", (socket) => {
         5
       )} disconnected at ${new Date().toUTCString().slice(17, -4)}.`
     );
-    makePlayerLeaveRoom(socket, data);
+    makePlayerLeaveRoom(socket, player, data);
   });
 
   socket.on("Dev query rooms", function (data) {
     console.log("Dev asked to query rooms.");
     socket.emit("Dev queried rooms", {
-      roomList: rooms,
+      rooms: rooms.map((room) => trimmedRoom(room)),
     });
   });
 
@@ -68,13 +89,13 @@ io.on("connection", (socket) => {
     let room = rooms.find((room) =>
       room.players.find((roomPlayer) => roomPlayer.socketId === senderId)
     );
-    let msg = `Hello to all from ${senderId.slice(0, 5)}.`;
+    let msg = `Hello to all ${room.roomName}-ers from ${senderId.slice(0, 4)}.`;
 
     if (room) {
       console.log(msg);
       io.in(room.roomName).emit("Hello to all", { msg });
     } else {
-      console.log(`Found no room for ${senderId.slice(0, 5)}!`);
+      console.log(`Found no room for ${senderId.slice(0, 4)}!`);
     }
   });
 
@@ -82,96 +103,90 @@ io.on("connection", (socket) => {
     console.log(`Let us create a room called "${data.roomName}"`);
 
     if (rooms.find((room) => room.roomName === data.roomName)) {
-      socket.emit("Room not created", { message: "Room already exists." });
+      socket.emit("Room not created", {
+        msg: `Room ${data.roomName} already exists.`,
+      });
       return;
     }
 
     let room = new Room(data.roomName);
     rooms.push(room);
-    socket.emit("Room created", { roomName: data.roomName });
+    socket.emit("Room created", { room: trimmedRoom(room) });
   });
 
   socket.on("Request entry", function (data) {
     console.log(
-      `Socket ${socket.id.slice(0, 5)} wants to enter room "${data.roomName}".`
+      `Socket ${socket.id.slice(0, 4)} wants to enter room "${data.roomName}".`
     );
+
+    setPlayerName(player, data.playerName);
 
     let room = rooms.find((room) => room.roomName === data.roomName);
 
     if (!room) {
       console.log("Room not found!");
-      socket.emit("Entry denied", { message: "Room not found." });
+      socket.emit("Entry denied", { msg: `Room ${data.roomName} not found.` });
       return;
     }
 
     if (
       room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
     ) {
-      console.log(`${socket.id.slice(0, 5)} already in ${room.roomName}.`);
+      console.log(`${socket.id.slice(0, 4)} already in ${room.roomName}.`);
       return;
     }
 
     console.log(
-      `Socket ${socket.id.slice(0, 5)} has entered room ${room.roomName}.`
+      `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
     );
     room.players.push(player);
-    console.log("rooms", rooms);
     socket.join(room.roomName);
     socket.emit("Entry granted", {
-      roomName: room.roomName,
-      roomData: room,
+      room: trimmedRoom(room),
     });
     socket.to(room.roomName).emit("Player entered your room", {
-      playerId: socket.id,
-      roomData: room,
+      player: trimmedPlayer(player),
+      room: trimmedRoom(room),
     });
   });
 
   socket.on("Leave room", function (data) {
     console.log("Leave room");
-    makePlayerLeaveRoom(socket, data);
+    makePlayerLeaveRoom(socket, player, data);
   });
-
-  function makePlayerLeaveRoom(socket, data) {
-    console.log("J22", { socketId: socket.id, roomName: data.roomName });
-
-    let room = rooms.find((room) => room.roomName === data.roomName);
-
-    if (!room) {
-      console.log("clause1", room);
-      rooms.forEach((roo) => {
-        console.log(
-          roo.roomName,
-          roo.players.map((rooPlayer) => rooPlayer.socketId)
-        );
-      });
-
-      room = rooms.find((roo) =>
-        roo.players.map((rooPlayer) => rooPlayer.socketId === socket.id)
-      );
-
-      console.log("clause2", room);
-    }
-
-    if (!room) {
-      console.log(
-        `Socket ${socket.id.slice(0, 5)} asked to leave room ${
-          data.roomName
-        } but no such room exists.`
-      );
-      return;
-    }
-
-    console.log(
-      `Socket ${socket.id.slice(0, 5)} is leaving room ${room.roomName}`
-    );
-    room.players = room.players.filter(
-      (roomPlayer) => roomPlayer.socketId !== player.socketId
-    );
-    socket.to(room.roomName).emit("Player left your room", {
-      playerId: socket.id,
-      roomData: room,
-    });
-    socket.leave(room.roomName);
-  }
 });
+
+function setPlayerName(player, playerName) {
+  player.playerName = playerName;
+}
+
+function makePlayerLeaveRoom(socket, player, data) {
+  let room = rooms.find((room) => room.roomName === data.roomName);
+
+  if (!room) {
+    room = rooms.find((roo) =>
+      roo.players.map((rooPlayer) => rooPlayer.socketId === socket.id)
+    );
+  }
+
+  if (!room) {
+    console.log(
+      `Socket ${socket.id.slice(0, 4)} asked to leave room ${
+        data.roomName
+      } but no such room exists.`
+    );
+    return;
+  }
+
+  console.log(
+    `Socket ${socket.id.slice(0, 4)} is leaving room ${room.roomName}`
+  );
+  room.players = room.players.filter(
+    (roomPlayer) => roomPlayer.socketId !== player.socketId
+  );
+  socket.to(room.roomName).emit("Player left your room", {
+    player: trimmedPlayer(player),
+    room: trimmedRoom(room),
+  });
+  socket.leave(room.roomName);
+}
