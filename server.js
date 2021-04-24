@@ -89,9 +89,16 @@ io.on("connection", (socket) => {
   }
 
   socket.on("Chat message", function (data) {
-    let roomName = roomsBySocket().find(
+    let roomNameObj = roomsBySocket().find(
       (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
-    )[0];
+    );
+
+    if (!roomNameObj) {
+      console.log("None such.");
+      return;
+    }
+
+    let roomName = roomNameObj[0];
 
     let room = rooms.find((roo) => roo.roomName === roomName);
 
@@ -132,56 +139,87 @@ io.on("connection", (socket) => {
 
     let room = new Room(data.roomName);
     rooms.push(room);
-    socket.emit("Room created", { room: trimmedRoom(room) });
+
+    makePlayerEnterRoom(
+      socket,
+      player,
+      data.playerName,
+      room,
+      data.roomName,
+      data.pleaseChangeUrlToRoomUrl
+    );
   });
 
   socket.on("Request entry", function (data) {
-    console.log(
-      `Socket ${socket.id.slice(0, 4)} wants to enter room "${data.roomName}".`
+    makePlayerEnterRoom(
+      socket,
+      player,
+      data.playerName,
+      null,
+      data.roomName,
+      data.pleaseChangeUrlToRoomUrl
     );
-
-    setPlayerName(player, data.playerName);
-
-    let room = rooms.find((room) => room.roomName === data.roomName);
-
-    if (!room) {
-      console.log("Room not found!");
-      socket.emit("Entry denied", { msg: `Room ${data.roomName} not found.` });
-      return;
-    }
-
-    if (
-      room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
-    ) {
-      console.log(`${socket.id.slice(0, 4)} already in ${room.roomName}.`);
-      return;
-    }
-
-    console.log(
-      `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
-    );
-    room.players.push(player);
-    socket.join(room.roomName);
-    socket.emit("Entry granted", {
-      room: trimmedRoom(room),
-    });
-    socket.to(room.roomName).emit("Player entered your room", {
-      player: trimmedPlayer(player),
-      room: trimmedRoom(room),
-    });
   });
 
   socket.on("Leave room", function (data) {
-    console.log("Leave room");
     makePlayerLeaveRoom(socket, player, data);
   });
 });
+
+function makePlayerEnterRoom(
+  socket,
+  player,
+  playerName,
+  room,
+  roomName,
+  pleaseChangeUrlToRoomUrl
+) {
+  console.log(
+    `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
+  );
+
+  setPlayerName(player, playerName);
+
+  if (!room) {
+    room = rooms.find((room) => room.roomName === roomName);
+  }
+
+  if (!room) {
+    console.log("Room not found!");
+    socket.emit("Entry denied", { msg: `Room ${roomName} not found.` });
+    return;
+  }
+
+  if (
+    room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
+  ) {
+    console.log(`${socket.id.slice(0, 4)} already in ${room.roomName}.`);
+    return;
+  }
+
+  console.log(
+    `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
+  );
+  room.players.push(player);
+  socket.join(room.roomName);
+  socket.emit("Entry granted", {
+    room: trimmedRoom(room),
+    pleaseChangeUrlToRoomUrl,
+  });
+  socket.to(room.roomName).emit("Player entered your room", {
+    player: trimmedPlayer(player),
+    room: trimmedRoom(room),
+  });
+}
 
 function setPlayerName(player, playerName) {
   player.playerName = playerName;
 }
 
 function makePlayerLeaveRoom(socket, player, data) {
+  console.log("Leave room");
+  let { playerName } = player;
+
   let room = rooms.find((room) => room.roomName === data.roomName);
 
   if (!room) {
@@ -206,7 +244,7 @@ function makePlayerLeaveRoom(socket, player, data) {
     (roomPlayer) => roomPlayer.socketId !== player.socketId
   );
   socket.to(room.roomName).emit("Player left your room", {
-    player: trimmedPlayer(player),
+    player: { playerName },
     room: trimmedRoom(room),
   });
   socket.leave(room.roomName);
