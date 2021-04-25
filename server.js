@@ -67,12 +67,22 @@ io.on("connection", (socket) => {
     )} connected at ${new Date().toUTCString().slice(17, -4)}.`
   );
 
+  socket.on("disconnecting", (data) => {
+    console.log(
+      `Socket ${socket.id.slice(
+        0,
+        5
+      )} disconnectING at ${new Date().toUTCString().slice(17, -4)}.`
+    );
+    makePlayerLeaveRoom(socket, player, data);
+  });
+
   socket.on("disconnect", (data) => {
     console.log(
       `Socket ${socket.id.slice(
         0,
         5
-      )} disconnected at ${new Date().toUTCString().slice(17, -4)}.`
+      )} disconnectED at ${new Date().toUTCString().slice(17, -4)}.`
     );
     makePlayerLeaveRoom(socket, player, data);
   });
@@ -89,6 +99,7 @@ io.on("connection", (socket) => {
   }
 
   socket.on("Chat message", function (data) {
+    console.log("Received chat message.");
     let roomNameObj = roomsBySocket().find(
       (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
     );
@@ -108,7 +119,7 @@ io.on("connection", (socket) => {
     }
 
     data.sender = trimmedPlayer(player);
-
+    console.log("Sending chat message.");
     io.in(room.roomName).emit("Chat message", data);
   });
 
@@ -220,11 +231,11 @@ function makePlayerLeaveRoom(socket, player, data) {
   console.log("Leave room");
   let { playerName } = player;
 
-  let room = rooms.find((room) => room.roomName === data.roomName);
+  let room = rooms.find((roo) => roo.roomName === data.roomName);
 
   if (!room) {
     room = rooms.find((roo) =>
-      roo.players.map((rooPlayer) => rooPlayer.socketId === socket.id)
+      roo.players.find((rooPlayer) => rooPlayer.socketId === socket.id)
     );
   }
 
@@ -234,6 +245,11 @@ function makePlayerLeaveRoom(socket, player, data) {
         data.roomName
       } but no such room exists.`
     );
+    return;
+  }
+
+  if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
+    console.log(`${socket.id.slice(5)} not in ${room ? room.roomName : room}`);
     return;
   }
 
