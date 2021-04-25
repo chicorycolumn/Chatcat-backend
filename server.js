@@ -151,25 +151,31 @@ io.on("connection", (socket) => {
     let room = new Room(data.roomName);
     rooms.push(room);
 
-    makePlayerEnterRoom(
-      socket,
-      player,
-      data.playerName,
-      room,
-      data.roomName,
-      data.pleaseChangeUrlToRoomUrl
-    );
+    makePlayerEnterRoom(socket, player, data.playerName, room, data.roomName);
   });
 
   socket.on("Request entry", function (data) {
-    makePlayerEnterRoom(
-      socket,
-      player,
-      data.playerName,
-      null,
-      data.roomName,
-      data.pleaseChangeUrlToRoomUrl
-    );
+    makePlayerEnterRoom(socket, player, data.playerName, null, data.roomName);
+  });
+
+  socket.on("Request room data", function (data) {
+    let room = rooms.find((roo) => roo.roomName === data.roomName);
+
+    if (!room) {
+      console.log("No room found.");
+      return;
+    }
+
+    if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
+      console.log(
+        `${socket.id.slice(0, 5)} requested room data for ${
+          room.roomName
+        } but she isn't in this room.`
+      );
+      return;
+    }
+
+    socket.emit("Room data", { room: trimmedRoom(room) });
   });
 
   socket.on("Leave room", function (data) {
@@ -177,14 +183,7 @@ io.on("connection", (socket) => {
   });
 });
 
-function makePlayerEnterRoom(
-  socket,
-  player,
-  playerName,
-  room,
-  roomName,
-  pleaseChangeUrlToRoomUrl
-) {
+function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
   console.log(
     `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
   );
@@ -215,7 +214,6 @@ function makePlayerEnterRoom(
   socket.join(room.roomName);
   socket.emit("Entry granted", {
     room: trimmedRoom(room),
-    pleaseChangeUrlToRoomUrl,
   });
   socket.to(room.roomName).emit("Player entered your room", {
     player: trimmedPlayer(player),
