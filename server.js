@@ -1,9 +1,8 @@
-const utils = require("./utils/utils.js");
 const app = require("express")();
 const cors = require("cors");
 const port = process.env.PORT || 4002;
 const index = require("./routes/index");
-
+const { Player, Room } = require("./utils/classes.js");
 app.use(cors());
 app.use(index);
 
@@ -19,43 +18,6 @@ const io = require("socket.io")(httpServer, options);
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
 let rooms = [];
-
-function trimmedPlayer(original) {
-  let newObj = {};
-  let publicProperties = ["socketId", "playerName"];
-  publicProperties.forEach((property) => {
-    newObj[property] = original[property];
-  });
-  return newObj;
-}
-
-function trimmedRoom(original) {
-  let newObj = {};
-  let publicProperties = ["roomName"];
-  publicProperties.forEach((property) => {
-    newObj[property] = original[property];
-  });
-  newObj["players"] = original.players.map((roomPlayer) =>
-    trimmedPlayer(roomPlayer)
-  );
-  return newObj;
-}
-
-class Room {
-  constructor(roomName, players, questions) {
-    this.roomName = roomName;
-    this.players = players || [];
-    this.questions = questions || ["What's your favourite colour?"];
-  }
-}
-
-class Player {
-  constructor(socketId, playerName, points) {
-    this.socketId = socketId;
-    this.playerName = playerName;
-    this.points = points || 0;
-  }
-}
 
 io.on("connection", (socket) => {
   let player = new Player(socket.id);
@@ -90,7 +52,7 @@ io.on("connection", (socket) => {
   socket.on("Dev query rooms", function (data) {
     console.log("Dev asked to query rooms.");
     socket.emit("Dev queried rooms", {
-      rooms: rooms.map((room) => trimmedRoom(room)),
+      rooms: rooms.map((room) => room.trim()),
     });
   });
 
@@ -118,7 +80,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    data.sender = trimmedPlayer(player);
+    data.sender = player.trim();
     console.log("Sending chat message.");
     io.in(room.roomName).emit("Chat message", data);
   });
@@ -175,7 +137,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    socket.emit("Room data", { room: trimmedRoom(room) });
+    socket.emit("Room data", { room: room.trim() });
   });
 
   socket.on("Leave room", function (data) {
@@ -213,11 +175,11 @@ function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
   room.players.push(player);
   socket.join(room.roomName);
   socket.emit("Entry granted", {
-    room: trimmedRoom(room),
+    room: room.trim(),
   });
   socket.to(room.roomName).emit("Player entered your room", {
-    player: trimmedPlayer(player),
-    room: trimmedRoom(room),
+    player: player.trim(),
+    room: room.trim(),
   });
 }
 
@@ -259,7 +221,7 @@ function makePlayerLeaveRoom(socket, player, data) {
   );
   socket.to(room.roomName).emit("Player left your room", {
     player: { playerName },
-    room: trimmedRoom(room),
+    room: room.trim(),
   });
   socket.leave(room.roomName);
 
