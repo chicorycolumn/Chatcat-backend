@@ -26,7 +26,7 @@ io.on("connection", (socket) => {
   console.log(
     `Socket ${socket.id.slice(
       0,
-      5
+      4
     )} connected at ${new Date().toUTCString().slice(17, -4)}.`
   );
 
@@ -46,13 +46,32 @@ io.on("connection", (socket) => {
     }
 
     players.push(player);
+
+    console.log("I made a player and am about to send it:", player);
+
+    socket.emit("Player loaded", { player });
+  });
+
+  socket.on("Update player data", function (data) {
+    if (!data.player) {
+      console.log("L31 You want to update player with nothing?");
+      return;
+    }
+
+    console.log("Updating player data", data.player);
+    Object.keys(data.player).forEach((k) => {
+      let v = data.player[k];
+      player[k] = v;
+    });
+
+    socket.emit("Player loaded", { player });
   });
 
   socket.on("disconnecting", (data) => {
     console.log(
       `Socket ${socket.id.slice(
         0,
-        5
+        4
       )} disconnectING at ${new Date().toUTCString().slice(17, -4)}.`
     );
     makePlayerLeaveRoom(socket, player, data);
@@ -62,16 +81,18 @@ io.on("connection", (socket) => {
     console.log(
       `Socket ${socket.id.slice(
         0,
-        5
+        4
       )} disconnectED at ${new Date().toUTCString().slice(17, -4)}.`
     );
     makePlayerLeaveRoom(socket, player, data);
   });
 
-  socket.on("Dev query rooms", function (data) {
-    console.log("Dev asked to query rooms.");
-    socket.emit("Dev queried rooms", {
-      rooms: rooms.map((room) => room.trim()),
+  socket.on("Dev query", function (data) {
+    console.log("Dev asked to query data.");
+    socket.emit("Dev queried", {
+      rooms: rooms,
+      player: player,
+      players: players,
     });
   });
 
@@ -152,7 +173,7 @@ io.on("connection", (socket) => {
 
     if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
       console.log(
-        `${socket.id.slice(0, 5)} requested room data for ${
+        `${socket.id.slice(0, 4)} requested room data for ${
           room.roomName
         } but she isn't in this room.`
       );
@@ -245,6 +266,12 @@ function setPlayerName(player, playerName) {
 
 function makePlayerLeaveRoom(socket, player, data) {
   console.log("Leave room");
+
+  if (!player) {
+    console.log(`makePlayerLeaveRoom sees that player is undefined.`);
+    return;
+  }
+
   let { playerName } = player;
 
   let room = rooms.find((roo) => roo.roomName === data.roomName);
