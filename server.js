@@ -3,6 +3,8 @@ const cors = require("cors");
 const port = process.env.PORT || 4002;
 const index = require("./routes/index");
 const { Player, Room } = require("./utils/classes.js");
+const aUtils = require("./utils/aUtils.js");
+
 app.use(cors());
 app.use(index);
 
@@ -18,16 +20,33 @@ const io = require("socket.io")(httpServer, options);
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
 let rooms = [];
+let players = [];
 
 io.on("connection", (socket) => {
-  let player = new Player(socket.id);
-
   console.log(
     `Socket ${socket.id.slice(
       0,
       5
     )} connected at ${new Date().toUTCString().slice(17, -4)}.`
   );
+
+  let player;
+
+  socket.on("Load player", function (data) {
+    if (data.truePlayerName) {
+      player = players.find(
+        (playe) => playe.truePlayerName === data.truePlayerName
+      );
+    }
+
+    if (player) {
+      player.socketId = socket.id;
+    } else {
+      player = new Player(aUtils.randomString(16), socket.id);
+    }
+
+    players.push(player);
+  });
 
   socket.on("disconnecting", (data) => {
     console.log(

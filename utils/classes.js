@@ -15,7 +15,8 @@ class Room {
 }
 
 class Player {
-  constructor(socketId, playerName, stars) {
+  constructor(truePlayerName, socketId, playerName, stars) {
+    this.truePlayerName = truePlayerName;
     this.socketId = socketId;
     this.playerName = playerName;
     this.stars = stars || 0;
