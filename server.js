@@ -33,6 +33,8 @@ io.on("connection", (socket) => {
   let player;
 
   socket.on("Load player", function (data) {
+    console.log("Load player", data);
+
     if (data.truePlayerName) {
       player = players.find(
         (playe) => playe.truePlayerName === data.truePlayerName
@@ -42,7 +44,7 @@ io.on("connection", (socket) => {
     if (player) {
       player.socketId = socket.id;
     } else {
-      player = new Player(aUtils.randomString(16), socket.id);
+      player = new Player(aUtils.randomString(16), socket.id, data.playerName);
     }
 
     players.push(player);
@@ -63,6 +65,8 @@ io.on("connection", (socket) => {
       let v = data.player[k];
       player[k] = v;
     });
+
+    console.log("Updated player", player);
 
     socket.emit("Player loaded", { player });
   });
