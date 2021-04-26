@@ -60,18 +60,21 @@ io.on("connection", (socket) => {
     return [...io.sockets.adapter.rooms.entries()];
   }
 
-  socket.on("Chat message", function (data) {
-    console.log("Received chat message.");
+  function roomNameBySocket(socket) {
     let roomNameObj = roomsBySocket().find(
       (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
     );
+    return roomNameObj ? roomNameObj[0] : null;
+  }
 
-    if (!roomNameObj) {
+  socket.on("Chat message", function (data) {
+    console.log("Received chat message.");
+    let roomName = roomNameBySocket(socket);
+
+    if (!roomName) {
       console.log("None such.");
       return;
     }
-
-    let roomName = roomNameObj[0];
 
     let room = rooms.find((roo) => roo.roomName === roomName);
 
@@ -143,7 +146,41 @@ io.on("connection", (socket) => {
   socket.on("Leave room", function (data) {
     makePlayerLeaveRoom(socket, player, data);
   });
+
+  socket.on("Give stars", function (data) {
+    let roomName = roomNameBySocket(socket);
+
+    if (!roomName) {
+      console.log("None such.");
+      return;
+    }
+
+    let room = rooms.find((roo) => roo.roomName === roomName);
+
+    let playerToStar = room.players.find(
+      (roomPlayer) => roomPlayer.playerName === data.playerNameToStar
+    );
+
+    if (playerToStar) {
+      playerToStar.stars += data.starIncrement;
+
+      updatePlayersWithRoomData(roomName);
+    }
+  });
 });
+
+function updatePlayersWithRoomData(roomName, room) {
+  if (!roomName) {
+    console.log("L51");
+    return;
+  }
+
+  if (!room) {
+    room = rooms.find((roo) => roo.roomName === roomName);
+  }
+
+  io.in(roomName).emit("Room data", { room: room.trim() });
+}
 
 function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
   console.log(
