@@ -123,7 +123,12 @@ io.on("connection", (socket) => {
         4
       )} disconnectED at ${new Date().toUTCString().slice(17, -4)}.`
     );
-    return; //swde
+    let player = players.find((playe) => playe.socketId === socket.id);
+    if (!player) {
+      console.log(`B11 no player found.`);
+      return;
+    }
+
     makePlayerLeaveRoom(socket, player, data);
   });
 
@@ -202,6 +207,12 @@ io.on("connection", (socket) => {
 
   socket.on("Request entry", function (data) {
     console.log("ø Request entry", data);
+    let player = players.find((playe) => playe.socketId === socket.id);
+    if (!player) {
+      console.log(`C11 no player found.`);
+      return;
+    }
+
     makePlayerEnterRoom(socket, player, data.playerName, null, data.roomName);
   });
 
