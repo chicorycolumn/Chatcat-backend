@@ -22,11 +22,11 @@ httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 const rooms = [];
 const players = [];
 
-setInterval(function () {
-  console.log("--------------------");
-  console.log(players);
-  console.log("--------------------");
-}, 5000);
+// setInterval(function () {
+//   console.log("--------------------");
+//   console.log(players);
+//   console.log("--------------------");
+// }, 5000);
 
 io.on("connection", (socket) => {
   console.log(
@@ -303,7 +303,12 @@ function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
   if (
     room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
   ) {
-    console.log(`${socket.id.slice(0, 4)} already in ${room.roomName}.`);
+    console.log(
+      `€ Entry denied. ${socket.id.slice(0, 4)} already in ${room.roomName}.`
+    );
+    socket.emit("Entry denied", {
+      msg: `I believe you are already in room ${room.roomName}. Perhaps in another tab?`,
+    });
     return;
   }
 
@@ -365,8 +370,12 @@ function makePlayerLeaveRoom(socket, player, data) {
     (roomPlayer) => roomPlayer.socketId !== player.socketId
   );
   socket.to(room.roomName).emit("Player left your room", {
-    player: { playerName },
+    player,
     room: room.trim(),
+  });
+  socket.emit("You're booted", {
+    msg: `You've been booted from room ${room.roomName}.`,
+    roomName: room.roomName,
   });
   socket.leave(room.roomName);
 
