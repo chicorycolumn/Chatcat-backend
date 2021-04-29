@@ -1,6 +1,7 @@
 class Room {
-  constructor(roomName, players, questions) {
+  constructor(roomName, roomPassword, players, questions) {
     this.roomName = roomName;
+    this.roomPassword = roomPassword;
     this.players = players || [];
     this.questions = questions || ["What's your favourite colour?"];
   }
@@ -10,6 +11,7 @@ class Room {
       roomName: this.roomName,
       players: this.players.map((player) => player.trim()),
       questions: this.questions,
+      roomPassword: this.roomPassword, //omega Delete this in Prod
     };
   }
 }

@@ -203,10 +203,10 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let room = new Room(data.roomName);
+    let room = new Room(data.roomName, data.roomPassword);
     rooms.push(room);
 
-    makePlayerEnterRoom(socket, player, room, data.roomName);
+    makePlayerEnterRoom(socket, player, room, data.roomName, data.roomPassword);
   });
 
   socket.on("Request entry", function (data) {
@@ -217,7 +217,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    makePlayerEnterRoom(socket, player, null, data.roomName);
+    makePlayerEnterRoom(socket, player, null, data.roomName, data.roomPassword);
   });
 
   socket.on("Request room data", function (data) {
@@ -287,7 +287,7 @@ function updatePlayersWithRoomData(roomName, room) {
   io.in(roomName).emit("Room data", { room: room.trim() });
 }
 
-function makePlayerEnterRoom(socket, player, room, roomName) {
+function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
   console.log(
     `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
   );
@@ -299,6 +299,14 @@ function makePlayerEnterRoom(socket, player, room, roomName) {
   if (!room) {
     console.log("€ Entry denied. Room not found.");
     socket.emit("Entry denied", { msg: `Room ${roomName} not found.` });
+    return;
+  }
+
+  if (room.roomPassword && room.roomPassword !== roomPassword) {
+    console.log("€ Entry denied. Password incorrect.");
+    socket.emit("Entry denied", {
+      msg: `Password ${roomPassword} for ${roomName} was incorrect.`, //omega Adjust this msg to be less revealing.
+    });
     return;
   }
 
