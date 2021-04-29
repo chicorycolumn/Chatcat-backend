@@ -36,6 +36,26 @@ io.on("connection", (socket) => {
     )} connected at ${new Date().toUTCString().slice(17, -4)}.`
   );
 
+  socket.on("Dev destroy all", function () {
+    console.log("ø DESTROY");
+
+    [rooms, players].forEach((arr) => {
+      while (arr.length) {
+        arr.pop();
+      }
+    });
+  });
+
+  socket.on("Dev query", function (data) {
+    console.log("ø Dev query");
+    console.log("players", players);
+    console.log("€ Dev queried");
+    socket.emit("Dev queried", {
+      rooms: rooms,
+      players: players,
+    });
+  });
+
   socket.on("Load player", function (data) {
     console.log("ø Load player", data);
     console.log("And just so you know, current players arr is:", players);
@@ -66,16 +86,6 @@ io.on("connection", (socket) => {
       player
     );
     socket.emit("Player loaded", { player });
-  });
-
-  socket.on("Dev destroy all", function () {
-    console.log("ø DESTROY");
-
-    [rooms, players].forEach((arr) => {
-      while (arr.length) {
-        arr.pop();
-      }
-    });
   });
 
   socket.on("Update player data", function (data) {
@@ -135,27 +145,6 @@ io.on("connection", (socket) => {
 
     makePlayerLeaveRoom(socket, player, data);
   });
-
-  socket.on("Dev query", function (data) {
-    console.log("ø Dev query");
-    console.log("players", players);
-    console.log("€ Dev queried");
-    socket.emit("Dev queried", {
-      rooms: rooms,
-      players: players,
-    });
-  });
-
-  function roomsBySocket() {
-    return [...io.sockets.adapter.rooms.entries()];
-  }
-
-  function roomNameBySocket(socket) {
-    let roomNameObj = roomsBySocket().find(
-      (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
-    );
-    return roomNameObj ? roomNameObj[0] : null;
-  }
 
   socket.on("Chat message", function (data) {
     console.log("ø Chat message");
@@ -272,6 +261,44 @@ io.on("connection", (socket) => {
       updatePlayersWithRoomData(roomName);
     }
   });
+
+  socket.on("Update room password", function (data) {
+    let room = rooms.find((roo) => roo.roomName === data.roomName);
+
+    if (!room) {
+      console.log(`K21 No such room ${data.roomName}.`);
+      return;
+    }
+
+    let isThisPlayerInTheRoom = room.players.find(
+      (playe) => playe.socketId === socket.id
+    );
+
+    if (!isThisPlayerInTheRoom) {
+      console.log(
+        `K22 How can this player be asking to change ${room.roomName}'s password, when they don't appear to be in the room?`
+      );
+      return;
+    }
+
+    room.roomPassword = data.roomPassword;
+
+    io.in(data.roomName).emit("Room password updated", {
+      roomPassword: data.roomPassword,
+      roomName: data.roomName,
+    });
+  });
+
+  function roomsBySocket() {
+    return [...io.sockets.adapter.rooms.entries()];
+  }
+
+  function roomNameBySocket(socket) {
+    let roomNameObj = roomsBySocket().find(
+      (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
+    );
+    return roomNameObj ? roomNameObj[0] : null;
+  }
 });
 
 function updatePlayersWithRoomData(roomName, room) {
