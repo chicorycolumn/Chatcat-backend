@@ -202,7 +202,7 @@ io.on("connection", (socket) => {
     let room = new Room(data.roomName);
     rooms.push(room);
 
-    makePlayerEnterRoom(socket, player, player.playerName, room, data.roomName);
+    makePlayerEnterRoom(socket, player, room, data.roomName);
   });
 
   socket.on("Request entry", function (data) {
@@ -213,7 +213,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    makePlayerEnterRoom(socket, player, data.playerName, null, data.roomName);
+    makePlayerEnterRoom(socket, player, null, data.roomName);
   });
 
   socket.on("Request room data", function (data) {
@@ -283,12 +283,10 @@ function updatePlayersWithRoomData(roomName, room) {
   io.in(roomName).emit("Room data", { room: room.trim() });
 }
 
-function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
+function makePlayerEnterRoom(socket, player, room, roomName) {
   console.log(
     `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
   );
-
-  setPlayerName(player, playerName);
 
   if (!room) {
     room = rooms.find((room) => room.roomName === roomName);
@@ -327,10 +325,6 @@ function makePlayerEnterRoom(socket, player, playerName, room, roomName) {
   });
 }
 
-function setPlayerName(player, playerName) {
-  player.playerName = playerName;
-}
-
 function makePlayerLeaveRoom(socket, player, data) {
   console.log("Leave room");
 
@@ -338,8 +332,6 @@ function makePlayerLeaveRoom(socket, player, data) {
     console.log(`makePlayerLeaveRoom sees that player is undefined.`);
     return;
   }
-
-  let { playerName } = player;
 
   let room = rooms.find((roo) => roo.roomName === data.roomName);
 
