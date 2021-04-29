@@ -349,9 +349,8 @@ function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
     return;
   }
 
-  console.log(
-    `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
-  );
+  aUtils.suffixPlayerNameIfNecessary(room, player);
+
   room.players.push(player);
   socket.join(room.roomName);
   console.log("€ Entry granted");
@@ -362,6 +361,9 @@ function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
     player: player.trim(),
     room: room.trim(),
   });
+  console.log(
+    `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
+  );
 }
 
 function makePlayerLeaveRoom(socket, player, data) {
