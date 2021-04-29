@@ -53,7 +53,11 @@ io.on("connection", (socket) => {
       player.socketId = socket.id;
     } else {
       console.log(">Creating new player");
-      player = new Player(aUtils.randomString(16), socket.id, data.playerName);
+      player = new Player(
+        `_${aUtils.randomString(16)}`,
+        socket.id,
+        data.playerName
+      );
       players.push(player);
     }
 
@@ -67,7 +71,7 @@ io.on("connection", (socket) => {
   socket.on("Dev destroy all", function () {
     console.log("ø DESTROY");
 
-    [(rooms, players)].forEach((arr) => {
+    [rooms, players].forEach((arr) => {
       while (arr.length) {
         arr.pop();
       }
@@ -375,8 +379,8 @@ function makePlayerLeaveRoom(socket, player, data) {
     console.log(`Deleting room ${room.roomName}.`);
 
     let indexOfRoomToDelete = rooms.indexOf(
-      (roo) => roo.roomName !== room.roomName
+      (roo) => roo.roomName === room.roomName
     );
-    rooms.splice(indexOfRoomToDelete, 1);
+    rooms.splice(indexOfRoomToDelete, 1); //gamma There ought to be a more reliable way to do this.
   }
 }
