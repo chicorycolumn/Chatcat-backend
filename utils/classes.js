@@ -22,6 +22,7 @@ class Player {
     this.socketId = socketId;
     this.playerName = playerName;
     this.stars = stars || 0;
+    this.isRoomboss = false;
   }
 
   trim() {
@@ -29,6 +30,7 @@ class Player {
       socketId: this.socketId,
       playerName: this.playerName,
       stars: this.stars,
+      isRoomboss: this.isRoomboss,
     };
   }
 }

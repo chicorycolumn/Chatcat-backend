@@ -195,7 +195,7 @@ io.on("connection", (socket) => {
     let room = new Room(data.roomName, data.roomPassword);
     rooms.push(room);
 
-    makePlayerEnterRoom(socket, player, room, data.roomName, data.roomPassword);
+    makePlayerEnterRoom(socket, player, data, room, true);
   });
 
   socket.on("Request entry", function (data) {
@@ -206,7 +206,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    makePlayerEnterRoom(socket, player, null, data.roomName, data.roomPassword);
+    makePlayerEnterRoom(socket, player, data);
   });
 
   socket.on("Request room data", function (data) {
@@ -314,7 +314,9 @@ function updatePlayersWithRoomData(roomName, room) {
   io.in(roomName).emit("Room data", { room: room.trim() });
 }
 
-function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
+function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
+  let { roomName, roomPassword } = sentData;
+
   console.log(
     `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
   );
@@ -349,66 +351,93 @@ function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
     return;
   }
 
-  let playerNameBeforeAdjustment = player.playerName;
+  player.isRoomboss = isRoomboss;
   aUtils.suffixPlayerNameIfNecessary(room, player);
-
-  if (playerNameBeforeAdjustment !== player.playerName) {
-    socket.emit("Player loaded", { player });
-  }
-
   room.players.push(player);
   socket.join(room.roomName);
-  console.log("€ Entry granted");
+
   socket.emit("Entry granted", {
     room: room.trim(),
+    player,
   });
+
   socket.to(room.roomName).emit("Player entered your room", {
     player: player.trim(),
     room: room.trim(),
   });
+
   console.log(
     `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
   );
 }
 
-function makePlayerLeaveRoom(socket, player, data) {
+function makePlayerLeaveRoom(socket, leavingPlayer, data) {
   console.log("Leave room");
+  let room;
 
-  if (!player) {
-    console.log(`makePlayerLeaveRoom sees that player is undefined.`);
-    return;
-  }
+  if (true) {
+    if (!leavingPlayer) {
+      console.log(`makePlayerLeaveRoom sees that leavingPlayer is undefined.`);
+      return;
+    }
 
-  let room = rooms.find((roo) => roo.roomName === data.roomName);
+    room = rooms.find((roo) => roo.roomName === data.roomName);
 
-  if (!room) {
-    room = rooms.find((roo) =>
-      roo.players.find((rooPlayer) => rooPlayer.socketId === socket.id)
-    );
-  }
+    if (!room) {
+      room = rooms.find((roo) =>
+        roo.players.find((rooPlayer) => rooPlayer.socketId === socket.id)
+      );
+    }
 
-  if (!room) {
-    console.log(
-      `Socket ${socket.id.slice(0, 4)} asked to leave room ${
-        data.roomName
-      } but no such room exists.`
-    );
-    return;
-  }
+    if (!room) {
+      console.log(
+        `Socket ${socket.id.slice(0, 4)} asked to leave room ${
+          data.roomName
+        } but no such room exists.`
+      );
+      return;
+    }
 
-  if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
-    console.log(`${socket.id.slice(5)} not in ${room ? room.roomName : room}`);
-    return;
+    if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
+      console.log(
+        `${socket.id.slice(5)} not in ${room ? room.roomName : room}`
+      );
+      return;
+    }
   }
 
   console.log(
     `Socket ${socket.id.slice(0, 4)} is leaving room ${room.roomName}`
   );
+
+  if (room.players.length === 1) {
+    console.log(`Only player is leaving, so deleting room ${room.roomName}.`);
+
+    let indexOfRoomToDelete = rooms.indexOf(
+      (roo) => roo.roomName === room.roomName
+    );
+    rooms.splice(indexOfRoomToDelete, 1); //gamma There ought to be a more reliable way to do this.
+    return;
+  }
+
   room.players = room.players.filter(
-    (roomPlayer) => roomPlayer.socketId !== player.socketId
+    (roomPlayer) => roomPlayer.socketId !== leavingPlayer.socketId
   );
+
+  if (leavingPlayer.isRoomboss) {
+    let newRoomboss =
+      room.players[Math.floor(Math.random() * room.players.length)];
+
+    newRoomboss.isRoomboss = true;
+
+    socket.to(newRoomboss.socketId).emit("Player loaded", {
+      player: newRoomboss,
+      msg: "You are now the roomboss.",
+    });
+  }
+
   socket.to(room.roomName).emit("Player left your room", {
-    player,
+    player: leavingPlayer,
     room: room.trim(),
   });
   socket.emit("You're booted", {
@@ -416,13 +445,4 @@ function makePlayerLeaveRoom(socket, player, data) {
     roomName: room.roomName,
   });
   socket.leave(room.roomName);
-
-  if (!room.players.length) {
-    console.log(`Deleting room ${room.roomName}.`);
-
-    let indexOfRoomToDelete = rooms.indexOf(
-      (roo) => roo.roomName === room.roomName
-    );
-    rooms.splice(indexOfRoomToDelete, 1); //gamma There ought to be a more reliable way to do this.
-  }
 }
