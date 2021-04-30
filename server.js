@@ -70,6 +70,7 @@ io.on("connection", (socket) => {
 
     if (player) {
       console.log(">Using extant player");
+      io.in(player.socketId).disconnectSockets();
       player.socketId = socket.id;
     } else {
       console.log(">Creating new player");
@@ -289,6 +290,10 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("Boot player", function (data) {
+    makePlayerLeaveRoom();
+  });
+
   function roomsBySocket() {
     return [...io.sockets.adapter.rooms.entries()];
   }
@@ -413,10 +418,8 @@ function makePlayerLeaveRoom(socket, leavingPlayer, data) {
   if (room.players.length === 1) {
     console.log(`Only player is leaving, so deleting room ${room.roomName}.`);
 
-    let indexOfRoomToDelete = rooms.indexOf(
-      (roo) => roo.roomName === room.roomName
-    );
-    rooms.splice(indexOfRoomToDelete, 1); //gamma There ought to be a more reliable way to do this.
+    aUtils.deleteFromArray(rooms, { roomName: room.roomName });
+
     return;
   }
 

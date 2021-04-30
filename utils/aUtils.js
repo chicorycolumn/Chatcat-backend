@@ -33,3 +33,12 @@ exports.suffixPlayerNameIfNecessary = (room, player) => {
     return newNum.toString();
   }
 };
+
+exports.deleteFromArray = (arr, identifyingData) => {
+  let indexOfItemToDelete = arr.indexOf((item) =>
+    Object.keys(identifyingData).every((key) => {
+      return item[key] === identifyingData[key];
+    })
+  );
+  arr.splice(indexOfItemToDelete, 1); //gamma There ought to be a more reliable way to do this.
+};
