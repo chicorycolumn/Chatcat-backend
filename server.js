@@ -349,7 +349,12 @@ function makePlayerEnterRoom(socket, player, room, roomName, roomPassword) {
     return;
   }
 
+  let playerNameBeforeAdjustment = player.playerName;
   aUtils.suffixPlayerNameIfNecessary(room, player);
+
+  if (playerNameBeforeAdjustment !== player.playerName) {
+    socket.emit("Player loaded", { player });
+  }
 
   room.players.push(player);
   socket.join(room.roomName);
