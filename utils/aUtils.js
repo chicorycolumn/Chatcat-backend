@@ -35,10 +35,16 @@ exports.suffixPlayerNameIfNecessary = (room, player) => {
 };
 
 exports.deleteFromArray = (arr, identifyingData) => {
-  let indexOfItemToDelete = arr.indexOf((item) =>
-    Object.keys(identifyingData).every((key) => {
-      return item[key] === identifyingData[key];
-    })
+  let indexOfItemToDelete = arr.indexOf(
+    arr.find((item) =>
+      Object.keys(identifyingData).every((key) => {
+        return item[key] === identifyingData[key];
+      })
+    )
   );
+  if (indexOfItemToDelete === -1) {
+    console.log({ indexOfItemToDelete });
+    throw "H33";
+  }
   arr.splice(indexOfItemToDelete, 1); //gamma There ought to be a more reliable way to do this.
 };

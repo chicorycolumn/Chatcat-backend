@@ -114,22 +114,7 @@ io.on("connection", (socket) => {
     socket.emit("Player loaded", { player });
   });
 
-  socket.on("disconnecting", (data) => {
-    console.log(
-      `ø disconnecting. Socket ${socket.id.slice(
-        0,
-        4
-      )} disconnectING at ${new Date().toUTCString().slice(17, -4)}.`
-    );
-
-    let player = players.find((playe) => playe.socketId === socket.id);
-    if (!player) {
-      console.log(`F11 no player found.`);
-      return;
-    }
-
-    makePlayerLeaveRoom(socket, player, data);
-  });
+  socket.on("disconnecting", (data) => {});
 
   socket.on("disconnect", (data) => {
     console.log(
@@ -144,7 +129,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    makePlayerLeaveRoom(socket, player, data);
+    makePlayerLeaveRoom(socket, player, data.roomName);
   });
 
   socket.on("Chat message", function (data) {
@@ -238,7 +223,7 @@ io.on("connection", (socket) => {
       console.log(`W11 No player found.`);
       return;
     }
-    makePlayerLeaveRoom(socket, player, data);
+    makePlayerLeaveRoom(socket, player, data.roomName);
   });
 
   socket.on("Give stars", function (data) {
@@ -291,7 +276,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Boot player", function (data) {
-    makePlayerLeaveRoom();
+    console.log(`ø Boot player ${data.playerName}`);
+    let player = players.find((playe) => playe.playerName === data.playerName);
+    makePlayerLeaveRoom(socket, player, data.roomName);
+  });
+
+  socket.on("I was booted", function (data) {
+    console.log("ø I was booted");
+    socket.leave(data.roomName);
   });
 
   function roomsBySocket() {
@@ -376,8 +368,8 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   );
 }
 
-function makePlayerLeaveRoom(socket, leavingPlayer, data) {
-  console.log("Leave room");
+function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
+  console.log(`Leave room for ${leavingPlayer.playerName}`);
   let room;
 
   if (true) {
@@ -386,40 +378,60 @@ function makePlayerLeaveRoom(socket, leavingPlayer, data) {
       return;
     }
 
-    room = rooms.find((roo) => roo.roomName === data.roomName);
+    room = rooms.find((roo) => roo.roomName === roomName);
 
     if (!room) {
       room = rooms.find((roo) =>
-        roo.players.find((rooPlayer) => rooPlayer.socketId === socket.id)
+        roo.players.find(
+          (rooPlayer) => rooPlayer.socketId === leavingPlayer.socketId
+        )
       );
     }
 
     if (!room) {
       console.log(
-        `Socket ${socket.id.slice(0, 4)} asked to leave room ${
-          data.roomName
-        } but no such room exists.`
+        `Socket ${leavingPlayer.socketId.slice(
+          0,
+          4
+        )} is to leave room ${roomName} but no such room exists.`
       );
       return;
     }
 
-    if (!room.players.find((roomPlayer) => roomPlayer.socketId === socket.id)) {
+    if (
+      !room.players.find(
+        (roomPlayer) => roomPlayer.socketId === leavingPlayer.socketId
+      )
+    ) {
       console.log(
-        `${socket.id.slice(5)} not in ${room ? room.roomName : room}`
+        `${leavingPlayer.socketId.slice(5)} not even in ${
+          room ? room.roomName : room
+        }`
       );
       return;
     }
   }
 
   console.log(
-    `Socket ${socket.id.slice(0, 4)} is leaving room ${room.roomName}`
+    `Player ${leavingPlayer.playerName} (${leavingPlayer.socketId.slice(
+      0,
+      4
+    )}) is leaving room ${room.roomName}`
   );
 
   if (room.players.length === 1) {
+    console.log("\n");
     console.log(`Only player is leaving, so deleting room ${room.roomName}.`);
-
+    console.log(
+      "Rooms array was",
+      rooms.map((roo) => roo.roomName)
+    );
     aUtils.deleteFromArray(rooms, { roomName: room.roomName });
-
+    console.log(
+      "Rooms array now",
+      rooms.map((roo) => roo.roomName)
+    );
+    console.log("\n");
     return;
   }
 
@@ -439,13 +451,24 @@ function makePlayerLeaveRoom(socket, leavingPlayer, data) {
     });
   }
 
-  socket.to(room.roomName).emit("Player left your room", {
-    player: leavingPlayer,
-    room: room.trim(),
-  });
-  socket.emit("You're booted", {
-    msg: `You've been booted from room ${room.roomName}.`,
-    roomName: room.roomName,
-  });
-  socket.leave(room.roomName);
+  if (socket.id === leavingPlayer.socketId) {
+    socket.leave(room.roomName);
+    socket.to(room.roomName).emit("Player left your room", {
+      player: leavingPlayer,
+      room: room.trim(),
+    });
+  } else {
+    console.log(`€ You're booted ${leavingPlayer.playerName}`);
+    socket.to(leavingPlayer.socketId).emit("You're booted", {
+      msg: `You've been booted from room ${room.roomName}.`,
+      roomName: room.roomName,
+    });
+    io.in(room.roomName)
+      .except(leavingPlayer.socketId)
+      .emit("Player left your room", {
+        player: leavingPlayer,
+        room: room.trim(),
+        isBoot: true,
+      });
+  }
 }
