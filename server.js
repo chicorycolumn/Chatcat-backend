@@ -60,6 +60,13 @@ io.on("connection", (socket) => {
     console.log("ø Load player", data);
     console.log("And just so you know, current players arr is:", players);
 
+    let putativePlayerName = aUtils.alphanumerise(data.playerName);
+
+    if (!putativePlayerName) {
+      console.log("G74");
+      return;
+    }
+
     let player;
 
     if (data.truePlayerName) {
@@ -77,7 +84,7 @@ io.on("connection", (socket) => {
       player = new Player(
         `_${aUtils.randomString(16)}`,
         socket.id,
-        data.playerName
+        putativePlayerName
       );
       players.push(player);
     }
@@ -160,9 +167,23 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Create room", function (data) {
+    let putativeRoomName = aUtils.alphanumerise(data.roomName);
+
     console.log(
-      `ø Create room. Let us create a room called "${data.roomName}"`
+      `ø Create room. Let us create a room called "${putativeRoomName}"`
     );
+
+    if (
+      !putativeRoomName ||
+      aUtils.bannedRoomNames.includes(putativeRoomName) ||
+      rooms.find((room) => room.roomName === putativeRoomName)
+    ) {
+      console.log("€ Room not created");
+      socket.emit("Room not created", {
+        msg: `Room ${putativeRoomName} already exists.`,
+      });
+      return;
+    }
 
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
@@ -170,15 +191,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rooms.find((room) => room.roomName === data.roomName)) {
-      console.log("€ Room not created");
-      socket.emit("Room not created", {
-        msg: `Room ${data.roomName} already exists.`,
-      });
-      return;
-    }
-
-    let room = new Room(data.roomName, data.roomPassword);
+    let room = new Room(putativeRoomName, data.roomPassword);
     rooms.push(room);
 
     makePlayerEnterRoom(socket, player, data, room, true);

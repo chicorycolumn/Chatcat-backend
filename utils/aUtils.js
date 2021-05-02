@@ -48,3 +48,12 @@ exports.deleteFromArray = (arr, identifyingData) => {
   }
   arr.splice(indexOfItemToDelete, 1); //gamma There ought to be a more reliable way to do this.
 };
+
+exports.bannedRoomNames = ["null", "undefined", "contact", "help"];
+
+exports.alphanumerise = (str) => {
+  return str
+    .split("")
+    .filter((char) => /[a-z0-9_]/i.test(char))
+    .join("");
+};
