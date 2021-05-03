@@ -17,13 +17,13 @@ exports.suffixPlayerNameIfNecessary = (room, player) => {
     room.players.find(
       (roomPlayer) =>
         roomPlayer.playerName ===
-        player.playerName.slice(0, 16 - suffix.length) + suffix
+        player.playerName.slice(0, 12 - suffix.length) + suffix
     )
   ) {
     suffix = incrementNumToString(suffix);
   }
 
-  player.playerName = player.playerName.slice(0, 16 - suffix.length) + suffix;
+  player.playerName = player.playerName.slice(0, 12 - suffix.length) + suffix;
 
   function incrementNumToString(str) {
     if (!str.length) {

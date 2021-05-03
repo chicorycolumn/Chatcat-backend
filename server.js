@@ -58,6 +58,12 @@ io.on("connection", (socket) => {
 
   socket.on("Load player", function (data) {
     console.log("ø Load player", data);
+
+    if (!data.playerName) {
+      console.log("Load player sees that !data.playerName");
+      data.playerName = `Player${Math.floor(Math.random() * 100)}`;
+    }
+
     console.log("And just so you know, current players arr is:", players);
 
     let putativePlayerName = aUtils.alphanumerise(data.playerName);
@@ -67,13 +73,9 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let player;
-
-    if (data.truePlayerName) {
-      player = players.find(
-        (playe) => playe.truePlayerName === data.truePlayerName
-      );
-    }
+    let player = data.truePlayerName
+      ? players.find((playe) => playe.truePlayerName === data.truePlayerName)
+      : null;
 
     if (player) {
       console.log(">Using extant player");
