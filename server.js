@@ -175,8 +175,15 @@ io.on("connection", (socket) => {
       `ø Create room. Let us create a room called "${putativeRoomName}"`
     );
 
+    if (!putativeRoomName) {
+      console.log("€ Room not created");
+      socket.emit("Room not created", {
+        msg: `Please supply a room name.`,
+      });
+      return;
+    }
+
     if (
-      !putativeRoomName ||
       aUtils.bannedRoomNames.includes(putativeRoomName) ||
       rooms.find((room) => room.roomName === putativeRoomName)
     ) {
@@ -190,6 +197,7 @@ io.on("connection", (socket) => {
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
       console.log(`G11 no player found.`);
+      socket.emit("You should refresh");
       return;
     }
 
@@ -204,6 +212,7 @@ io.on("connection", (socket) => {
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
       console.log(`C11 no player found.`);
+      socket.emit("You should refresh");
       return;
     }
 

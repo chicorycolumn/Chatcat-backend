@@ -47,8 +47,11 @@ exports.deleteFromArray = (arr, identifyingData) => {
 exports.bannedRoomNames = ["null", "undefined", "contact", "help"];
 
 exports.alphanumerise = (str) => {
-  return str
-    .split("")
-    .filter((char) => /[a-z0-9_]/i.test(char))
-    .join("");
+  return (
+    str &&
+    str
+      .split("")
+      .filter((char) => /[a-z0-9_]/i.test(char))
+      .join("")
+  );
 };
