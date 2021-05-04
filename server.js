@@ -139,6 +139,22 @@ io.on("connection", (socket) => {
     }
 
     makePlayerLeaveRoom(socket, player, data.roomName);
+
+    //If this player's most recent room has been deleted, then delete this player.
+    let mostRecentRoom = rooms.find(
+      (roo) => roo.roomName === player.mostRecentRoom
+    );
+    console.log(
+      "players arr was",
+      players.map((playe) => playe.playerName)
+    );
+    if (!mostRecentRoom) {
+      aUtils.deleteFromArray(players, { socketId: player.socketId });
+    }
+    console.log(
+      "players arr now",
+      players.map((playe) => playe.playerName)
+    );
   });
 
   socket.on("Chat message", function (data) {
@@ -450,24 +466,26 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
       "Rooms array was",
       rooms.map((roo) => roo.roomName)
     );
-    console.log(
-      "Players array was",
-      players.map((playe) => playe.playerName)
-    );
 
-    //Delete this Room as only player has left.
+    //Delete this Room as its only player has left.
     aUtils.deleteFromArray(rooms, { roomName: room.roomName });
-    //Delete all Players whose most recent room was this one.
-    aUtils.deleteFromArray(players, { mostRecentRoom: room.roomName });
 
     console.log(
       "Rooms array now",
       rooms.map((roo) => roo.roomName)
     );
-    console.log(
-      "Players array now",
-      players.map((playe) => playe.playerName)
-    );
+
+    //For all Players whose most recent room was this one, delete their game stats.
+    players.forEach((playe) => {
+      if (playe.mostRecentRoom === room.roomName) {
+        console.log("This player was:", playe);
+        Object.keys(playe.gameStatProperties).forEach((gameStatKey) => {
+          let gameStarDefaultValue = playe.gameStatProperties[gameStatKey];
+          playe[gameStatKey] = gameStarDefaultValue;
+        });
+        console.log("This player now:", playe);
+      }
+    });
     console.log("\n");
     return;
   }

@@ -21,6 +21,7 @@ class Player {
     this.stars = stars || 0;
     this.isRoomboss = false;
     this.mostRecentRoom = null;
+    this.gameStatProperties = { stars: 0, isRoomboss: false };
   }
 
   trim() {
