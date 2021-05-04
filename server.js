@@ -367,6 +367,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   aUtils.suffixPlayerNameIfNecessary(room, player);
   room.players.push(player);
   socket.join(room.roomName);
+  player.mostRecentRoom = room.roomName;
 
   socket.emit("Entry granted", {
     room: room.trim(),
@@ -436,15 +437,27 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
 
   if (room.players.length === 1) {
     console.log("\n");
-    console.log(`Only player is leaving, so deleting room ${room.roomName}.`);
     console.log(
       "Rooms array was",
       rooms.map((roo) => roo.roomName)
     );
+    console.log(
+      "Players array was",
+      players.map((playe) => playe.playerName)
+    );
+
+    //Delete this Room as only player has left.
     aUtils.deleteFromArray(rooms, { roomName: room.roomName });
+    //Delete all Players whose most recent room was this one.
+    aUtils.deleteFromArray(players, { mostRecentRoom: room.roomName });
+
     console.log(
       "Rooms array now",
       rooms.map((roo) => roo.roomName)
+    );
+    console.log(
+      "Players array now",
+      players.map((playe) => playe.playerName)
     );
     console.log("\n");
     return;

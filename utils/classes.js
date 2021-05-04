@@ -20,6 +20,7 @@ class Player {
     this.playerName = playerName;
     this.stars = stars || 0;
     this.isRoomboss = false;
+    this.mostRecentRoom = null;
   }
 
   trim() {

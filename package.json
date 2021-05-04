@@ -1,5 +1,5 @@
 {
-  "name": "socketio4-spike-backend",
+  "name": "Chatcat-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
+    "lodash": "^4.17.21",
     "socket.io": "^4.0.1"
   },
   "devDependencies": {

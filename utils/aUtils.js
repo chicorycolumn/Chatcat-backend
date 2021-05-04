@@ -1,3 +1,5 @@
+const _remove = require("lodash/remove");
+
 exports.randomString = (length) => {
   let chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -35,18 +37,11 @@ exports.suffixPlayerNameIfNecessary = (room, player) => {
 };
 
 exports.deleteFromArray = (arr, identifyingData) => {
-  let indexOfItemToDelete = arr.indexOf(
-    arr.find((item) =>
-      Object.keys(identifyingData).every((key) => {
-        return item[key] === identifyingData[key];
-      })
-    )
-  );
-  if (indexOfItemToDelete === -1) {
-    console.log({ indexOfItemToDelete });
-    throw "H33";
-  }
-  arr.splice(indexOfItemToDelete, 1); //gamma There ought to be a more reliable way to do this.
+  _remove(arr, function (item) {
+    return Object.keys(identifyingData).every(
+      (key) => item[key] === identifyingData[key]
+    );
+  });
 };
 
 exports.bannedRoomNames = ["null", "undefined", "contact", "help"];
