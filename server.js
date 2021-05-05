@@ -389,7 +389,16 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   }
 
   player.isRoomboss = isRoomboss;
+
   aUtils.suffixPlayerNameIfNecessary(room, player);
+
+  if (player.mostRecentRoom !== room.roomName) {
+    console.log(
+      "Wiping player stats as they are entering a new room, ie not re-entering."
+    );
+    resetPlayerGameStats(player);
+  }
+
   room.players.push(player);
   socket.join(room.roomName);
   player.mostRecentRoom = room.roomName;
@@ -407,6 +416,13 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   console.log(
     `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
   );
+}
+
+function resetPlayerGameStats(player) {
+  Object.keys(player.gameStatProperties).forEach((gameStatKey) => {
+    let gameStatDefaultValue = player.gameStatProperties[gameStatKey];
+    player[gameStatKey] = gameStatDefaultValue;
+  });
 }
 
 function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
@@ -479,10 +495,7 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
     players.forEach((playe) => {
       if (playe.mostRecentRoom === room.roomName) {
         console.log("This player was:", playe);
-        Object.keys(playe.gameStatProperties).forEach((gameStatKey) => {
-          let gameStarDefaultValue = playe.gameStatProperties[gameStatKey];
-          playe[gameStatKey] = gameStarDefaultValue;
-        });
+        resetPlayerGameStats(playe);
         console.log("This player now:", playe);
       }
     });
