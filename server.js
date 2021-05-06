@@ -388,10 +388,6 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     return;
   }
 
-  player.isRoomboss = isRoomboss;
-
-  aUtils.suffixPlayerNameIfNecessary(room, player);
-
   if (player.mostRecentRoom !== room.roomName) {
     console.log(
       "Wiping player stats as they are entering a new room, ie not re-entering."
@@ -399,8 +395,12 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     resetPlayerGameStats(player);
   }
 
+  aUtils.suffixPlayerNameIfNecessary(room, player);
+  player.isRoomboss = isRoomboss;
+
   room.players.push(player);
   socket.join(room.roomName);
+
   player.mostRecentRoom = room.roomName;
 
   socket.emit("Entry granted", {
