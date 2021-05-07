@@ -24,14 +24,14 @@ const players = [];
 
 io.on("connection", (socket) => {
   console.log(
-    `ø connection. Socket ${socket.id.slice(
+    `ø connection <${socket.id.slice(
       0,
       4
-    )} connected at ${new Date().toUTCString().slice(17, -4)}.`
+    )}> at ${new Date().toUTCString().slice(17, -4)}.`
   );
 
   socket.on("Dev destroy all", function () {
-    console.log("ø DESTROY");
+    console.log(`ø DESTROY <${socket.id.slice(0, 4)}>`);
 
     [rooms, players].forEach((arr) => {
       while (arr.length) {
@@ -41,9 +41,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Dev query", function (data) {
-    console.log("ø Dev query");
+    console.log(`ø Dev query <${socket.id.slice(0, 4)}>`);
     console.log("players", players);
-    console.log("€ Dev queried");
     socket.emit("Dev queried", {
       rooms: rooms,
       players: players,
@@ -51,7 +50,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Load player", function (data) {
-    console.log("ø Load player", data);
+    console.log(`ø Load player <${socket.id.slice(0, 4)}>`, data);
 
     if (!data.playerName) {
       console.log("Load player sees that !data.playerName");
@@ -72,13 +71,20 @@ io.on("connection", (socket) => {
       : null;
 
     if (player) {
-      console.log(">Using extant player");
+      console.log(
+        `>Using extant player ${player.playerName}${player.truePlayerName}`
+      );
       io.in(player.socketId).disconnectSockets();
       player.socketId = socket.id;
     } else {
-      console.log(">Creating new player");
+      let putativeTruePlayerName = `_${aUtils.randomString(16)}`;
+
+      console.log(
+        `>Creating new player ${putativePlayerName}${putativeTruePlayerName}`
+      );
+
       player = new Player(
-        `_${aUtils.randomString(16)}`,
+        putativeTruePlayerName,
         socket.id,
         putativePlayerName
       );
@@ -93,7 +99,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Update player data", function (data) {
-    console.log("ø Update player data", data);
+    console.log(`ø Update player data <${socket.id.slice(0, 4)}>`, data);
 
     if (!data.player) {
       console.log("L31 You want to update player with nothing?");
@@ -102,7 +108,7 @@ io.on("connection", (socket) => {
 
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
-      console.log(`C31 no player found.`);
+      console.log(`L32 no player found.`);
       return;
     }
 
@@ -113,7 +119,6 @@ io.on("connection", (socket) => {
     });
 
     console.log("players arr after I updated player", players);
-    console.log("€ Player loaded");
     socket.emit("Player loaded", { player });
   });
 
@@ -121,10 +126,10 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", (data) => {
     console.log(
-      `ø disconnect Socket ${socket.id.slice(
+      `ø disconnect <${socket.id.slice(
         0,
         4
-      )} disconnectED at ${new Date().toUTCString().slice(17, -4)}.`
+      )}> disconnected at ${new Date().toUTCString().slice(17, -4)}.`
     );
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
@@ -132,7 +137,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    makePlayerLeaveRoom(socket, player, data.roomName);
+    makePlayerLeaveRoom(io, socket, player, data.roomName);
 
     //If this player's most recent room has been deleted, then delete this player.
     let mostRecentRoom = rooms.find(
@@ -152,29 +157,28 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Chat message", function (data) {
-    console.log("ø Chat message");
+    console.log(`ø Chat message <${socket.id.slice(0, 4)}>`);
     let roomName = roomNameBySocket(socket);
 
     if (!roomName) {
-      console.log("None such.");
+      console.log("T27 None such room.");
       return;
     }
 
     let room = rooms.find((roo) => roo.roomName === roomName);
 
     if (!room) {
-      console.log("No such room to emit chat message to.");
+      console.log("T28 No such room to emit chat message to.");
       return;
     }
 
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
-      console.log(`L11 no player found.`);
+      console.log(`T29 no player found.`);
       return;
     }
     data.sender = player.trim();
 
-    console.log("Sending chat message.");
     io.in(room.roomName).emit("Chat message", data);
   });
 
@@ -182,7 +186,10 @@ io.on("connection", (socket) => {
     let putativeRoomName = aUtils.alphanumerise(data.roomName);
 
     console.log(
-      `ø Create room. Let us create a room called "${putativeRoomName}"`
+      `ø Create room. <${socket.id.slice(
+        0,
+        4
+      )}> We'll create room "${putativeRoomName}".`
     );
 
     if (!putativeRoomName) {
@@ -206,7 +213,7 @@ io.on("connection", (socket) => {
 
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
-      console.log(`G11 no player found.`);
+      console.log(`T30 no player found.`);
       socket.emit("You should refresh");
       return;
     }
@@ -218,10 +225,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Request entry", function (data) {
-    console.log("ø Request entry", data);
+    console.log(`ø Request entry <${socket.id.slice(0, 4)}>`, data);
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
-      console.log(`C11 no player found.`);
+      console.log(`C11 no player found, € You should refresh`);
       socket.emit("You should refresh");
       return;
     }
@@ -230,11 +237,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Request room data", function (data) {
-    console.log("ø Request room data", data);
+    console.log(`ø Request room data <${socket.id.slice(0, 4)}>`, data);
     let room = rooms.find((roo) => roo.roomName === data.roomName);
 
     if (!room) {
-      console.log("No room found.");
+      console.log("M45 No room found.");
       return;
     }
 
@@ -246,26 +253,26 @@ io.on("connection", (socket) => {
       );
       return;
     }
-    console.log("€ Room data");
+
     socket.emit("Room data", { room: room.trim() });
   });
 
   socket.on("Leave room", function (data) {
-    console.log("ø Leave room", data);
+    console.log(`ø Leave room <${socket.id.slice(0, 4)}>`, data);
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
       console.log(`W11 No player found.`);
       return;
     }
-    makePlayerLeaveRoom(socket, player, data.roomName);
+    makePlayerLeaveRoom(io, socket, player, data.roomName);
   });
 
   socket.on("Give stars", function (data) {
-    console.log("ø Give stars", data);
+    console.log(`ø Give stars <${socket.id.slice(0, 4)}>`, data);
     let roomName = roomNameBySocket(socket);
 
     if (!roomName) {
-      console.log("None such.");
+      console.log("U30 None such.");
       return;
     }
 
@@ -296,7 +303,12 @@ io.on("connection", (socket) => {
 
     if (!isThisPlayerInTheRoom) {
       console.log(
-        `K22 How can this player be asking to change ${room.roomName}'s password, when they don't appear to be in the room?`
+        `K22 How can this player <${socket.id.slice(
+          0,
+          4
+        )}> be asking to change ${
+          room.roomName
+        }'s password, when they don't appear to be in the room?`
       );
       return;
     }
@@ -310,29 +322,20 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Boot player", function (data) {
-    console.log(`ø Boot player ${data.playerName}`);
+    console.log(
+      `ø Boot player <${socket.id.slice(0, 4)}> we'll boot ${data.playerName}`
+    );
     let player = players.find((playe) => playe.playerName === data.playerName);
-    makePlayerLeaveRoom(socket, player, data.roomName);
+    makePlayerLeaveRoom(io, socket, player, data.roomName);
   });
 
   socket.on("I was booted", function (data) {
-    console.log("ø I was booted");
+    console.log(`ø I was booted <${socket.id.slice(0, 4)}>`);
     socket.leave(data.roomName);
   });
 
   function roomsBySocket() {
     return [...io.sockets.adapter.rooms.entries()];
-  }
-
-  function isSocketActive(socketId) {
-    // console.log("---------------");
-    // console.log(`Looking for socketId ${socketId}.`);
-    const activeSocketIds = [...io.of("/").adapter.sids.entries()].map(
-      (subArr) => subArr[0]
-    );
-    // console.log("activeSocketIds", activeSocketIds);
-    // console.log("/--------------");
-    return activeSocketIds.includes(socketId);
   }
 
   function roomNameBySocket(socket) {
@@ -342,6 +345,17 @@ io.on("connection", (socket) => {
     return roomNameObj ? roomNameObj[0] : null;
   }
 });
+
+function isSocketActive(io, socketId) {
+  // console.log("---------------");
+  // console.log(`Looking for socketId ${socketId}.`);
+  const activeSocketIds = [...io.of("/").adapter.sids.entries()].map(
+    (subArr) => subArr[0]
+  );
+  // console.log("activeSocketIds", activeSocketIds);
+  // console.log("/--------------");
+  return activeSocketIds.includes(socketId);
+}
 
 function updatePlayersWithRoomData(roomName, room) {
   if (!roomName) {
@@ -360,7 +374,9 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   let { roomName, roomPassword } = sentData;
 
   console.log(
-    `Socket ${socket.id.slice(0, 4)} wants to enter room "${roomName}".`
+    `<${socket.id.slice(0, 4)}> ${player.playerName}${
+      player.truePlayerName
+    } wants to enter room "${roomName}".`
   );
 
   if (!room) {
@@ -385,7 +401,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     room.players.find((roomPlayer) => roomPlayer.socketId === player.socketId)
   ) {
     console.log(
-      `€ Entry denied. ${socket.id.slice(0, 4)} already in ${room.roomName}.`
+      `€ Entry denied. ${player.playerName}${player.truePlayerName} already in ${room.roomName}.`
     );
     socket.emit("Entry denied", {
       msg: `I believe you are already in room ${room.roomName}. Perhaps in another tab?`,
@@ -395,7 +411,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
 
   if (player.mostRecentRoom !== room.roomName) {
     console.log(
-      "Wiping player stats as they are entering a new room, ie not re-entering."
+      `Wiping player stats for ${player.playerName}${player.truePlayerName} as they are entering a new room, ie not re-entering.`
     );
     resetPlayerGameStats(player);
   }
@@ -419,7 +435,9 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   });
 
   console.log(
-    `Socket ${socket.id.slice(0, 4)} has entered room ${room.roomName}.`
+    `<${socket.id.slice(0, 4)}> ${player.playerName}${
+      player.truePlayerName
+    } entered room ${room.roomName}.`
   );
 }
 
@@ -430,11 +448,15 @@ function resetPlayerGameStats(player) {
   });
 }
 
-function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
+function makePlayerLeaveRoom(io, socket, leavingPlayer, roomName) {
   console.log("\n");
   console.log("* * *");
   console.log("\n");
-  console.log(`Leave room for ${leavingPlayer.playerName}`);
+  console.log(
+    `<${socket.id.slice(0, 4)}> Leave room for ${leavingPlayer.playerName}${
+      leavingPlayer.truePlayerName
+    }`
+  );
   let room;
 
   if (true) {
@@ -455,10 +477,10 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
 
     if (!room) {
       console.log(
-        `Socket ${leavingPlayer.socketId.slice(
+        `<${socket.id.slice(
           0,
           4
-        )} is to leave room ${roomName} but no such room exists.`
+        )}> to leave room ${roomName} but no such room exists.`
       );
       return;
     }
@@ -469,19 +491,16 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
       )
     ) {
       console.log(
-        `${leavingPlayer.socketId.slice(5)} not even in ${
-          room ? room.roomName : room
-        }`
+        `<${socket.id.slice(0, 4)}> not even in ${room ? room.roomName : room}`
       );
       return;
     }
   }
 
   console.log(
-    `Player ${leavingPlayer.playerName} (${leavingPlayer.socketId.slice(
-      0,
-      4
-    )}) is leaving room ${room.roomName}`
+    `<${socket.id.slice(0, 4)}> ${leavingPlayer.playerName}${
+      leavingPlayer.truePlayerName
+    } is leaving room ${room.roomName}`
   );
 
   if (room.players.length === 1) {
@@ -491,7 +510,7 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
       rooms.map((roo) => roo.roomName)
     );
 
-    //Delete this Room as its only player has left.
+    console.log("Delete this Room as its only player has left.");
     aUtils.deleteFromArray(rooms, { roomName: room.roomName });
 
     console.log(
@@ -499,24 +518,22 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
       rooms.map((roo) => roo.roomName)
     );
 
-    //For all Players whose most recent room was this one, delete their game stats.
-
     console.log(
       "I deleted the room, so now I'm looking at the players whose most recent room was that one."
     );
 
     players.forEach((playe) => {
       if (playe.mostRecentRoom === room.roomName) {
-        if (!isSocketActive(playe.socketId)) {
+        if (!isSocketActive(io, playe.socketId)) {
           console.log(
-            `Deleting player ${playe.truePlayerName} as they're inactive.`
+            `Deleting player ${playe.playerName}${playe.truePlayerName} as they're inactive.`
           );
           aUtils.deleteFromArray(players, {
             truePlayerName: playe.truePlayerName,
           });
         } else {
           console.log(
-            `Wiping player stats for ${playe.truePlayerName} as they're still active.`
+            `Wiping player stats for ${playe.playerName}${playe.truePlayerName} as they're still active.`
           );
           console.log("This player was:", playe);
           resetPlayerGameStats(playe);
@@ -551,7 +568,9 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
       room: room.trim(),
     });
   } else {
-    console.log(`€ You're booted ${leavingPlayer.playerName}`);
+    console.log(
+      `€ You're booted ${leavingPlayer.playerName}${leavingPlayer.truePlayerName}`
+    );
     socket.to(leavingPlayer.socketId).emit("You're booted", {
       msg: `You've been booted from ${room.roomName}.`,
       roomName: room.roomName,
