@@ -22,12 +22,6 @@ httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 const rooms = [];
 const players = [];
 
-// setInterval(function () {
-//   console.log("--------------------");
-//   console.log(players);
-//   console.log("--------------------");
-// }, 5000);
-
 io.on("connection", (socket) => {
   console.log(
     `ø connection. Socket ${socket.id.slice(
@@ -330,6 +324,17 @@ io.on("connection", (socket) => {
     return [...io.sockets.adapter.rooms.entries()];
   }
 
+  function isSocketActive(socketId) {
+    // console.log("---------------");
+    // console.log(`Looking for socketId ${socketId}.`);
+    const activeSocketIds = [...io.of("/").adapter.sids.entries()].map(
+      (subArr) => subArr[0]
+    );
+    // console.log("activeSocketIds", activeSocketIds);
+    // console.log("/--------------");
+    return activeSocketIds.includes(socketId);
+  }
+
   function roomNameBySocket(socket) {
     let roomNameObj = roomsBySocket().find(
       (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
@@ -426,6 +431,9 @@ function resetPlayerGameStats(player) {
 }
 
 function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
+  console.log("\n");
+  console.log("* * *");
+  console.log("\n");
   console.log(`Leave room for ${leavingPlayer.playerName}`);
   let room;
 
@@ -492,11 +500,28 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
     );
 
     //For all Players whose most recent room was this one, delete their game stats.
+
+    console.log(
+      "I deleted the room, so now I'm looking at the players whose most recent room was that one."
+    );
+
     players.forEach((playe) => {
       if (playe.mostRecentRoom === room.roomName) {
-        console.log("This player was:", playe);
-        resetPlayerGameStats(playe);
-        console.log("This player now:", playe);
+        if (!isSocketActive(playe.socketId)) {
+          console.log(
+            `Deleting player ${playe.truePlayerName} as they're inactive.`
+          );
+          aUtils.deleteFromArray(players, {
+            truePlayerName: playe.truePlayerName,
+          });
+        } else {
+          console.log(
+            `Wiping player stats for ${playe.truePlayerName} as they're still active.`
+          );
+          console.log("This player was:", playe);
+          resetPlayerGameStats(playe);
+          console.log("This player now:", playe);
+        }
       }
     });
     console.log("\n");
@@ -528,7 +553,7 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
   } else {
     console.log(`€ You're booted ${leavingPlayer.playerName}`);
     socket.to(leavingPlayer.socketId).emit("You're booted", {
-      msg: `You've been booted from room ${room.roomName}.`,
+      msg: `You've been booted from ${room.roomName}.`,
       roomName: room.roomName,
     });
     io.in(room.roomName)
@@ -539,4 +564,8 @@ function makePlayerLeaveRoom(socket, leavingPlayer, roomName) {
         isBoot: true,
       });
   }
+
+  console.log("\n");
+  console.log("* *");
+  console.log("\n");
 }
