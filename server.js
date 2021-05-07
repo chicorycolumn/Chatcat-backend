@@ -278,6 +278,11 @@ io.on("connection", (socket) => {
 
     let room = rooms.find((roo) => roo.roomName === roomName);
 
+    if (!room) {
+      console.log("U31 None such.");
+      return;
+    }
+
     let playerToStar = room.players.find(
       (roomPlayer) => roomPlayer.playerName === data.playerNameToStar
     );
