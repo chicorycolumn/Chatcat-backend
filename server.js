@@ -15,7 +15,7 @@ const options = {
   },
 };
 const httpServer = require("http").createServer(app);
-const io = require("socket.io")(httpServer, options);
+const io = require("socket.io")(httpServer);
 
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
