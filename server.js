@@ -10,12 +10,12 @@ app.use(index);
 
 const options = {
   cors: {
-    origin: port,
+    origins: ["http://127.0.0.1:4002", "https://chatcat-chatroom.netlify.app/"],
     methods: ["GET", "POST"],
   },
 };
 const httpServer = require("http").createServer(app);
-const io = require("socket.io")(httpServer);
+const io = require("socket.io")(httpServer, options);
 
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));
 
