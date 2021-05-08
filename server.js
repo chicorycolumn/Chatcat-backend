@@ -10,7 +10,7 @@ app.use(index);
 
 const options = {
   cors: {
-    origins: ["http://127.0.0.1:4002", "https://chatcat-chatroom.netlify.app/"],
+    origins: ["http://127.0.0.1:4002", "https://chattercat.netlify.app/"],
     methods: ["GET", "POST"],
   },
 };
