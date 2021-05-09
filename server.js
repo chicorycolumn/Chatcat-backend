@@ -318,10 +318,20 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let currentRoomPassword = room.roomPassword;
-    let newRoomPassword = aUtils.fourLetterWord(currentRoomPassword);
-    room.roomPassword = newRoomPassword;
-
+    if (data.flipPasswordProtection) {
+      if (room.isPasswordProtected) {
+        room.isPasswordProtected = false;
+        room.roomPassword = null;
+      } else {
+        room.isPasswordProtected = true;
+        room.roomPassword = aUtils.fourLetterWord();
+      }
+      io.in(data.roomName).emit("Room data", { room: room.trim() });
+    } else {
+      let currentRoomPassword = room.roomPassword;
+      let newRoomPassword = aUtils.fourLetterWord(currentRoomPassword);
+      room.roomPassword = newRoomPassword;
+    }
     io.in(data.roomName).emit("Room password updated", {
       roomPassword: room.roomPassword,
       roomName: room.roomName,

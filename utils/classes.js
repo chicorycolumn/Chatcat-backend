@@ -2,12 +2,14 @@ class Room {
   constructor(roomName, roomPassword, players) {
     this.roomName = roomName;
     this.roomPassword = roomPassword;
+    this.isPasswordProtected = !!this.roomPassword;
     this.players = players || [];
   }
 
   trim() {
     return {
       roomName: this.roomName,
+      isPasswordProtected: this.isPasswordProtected,
       players: this.players.map((player) => player.trim()),
     };
   }
