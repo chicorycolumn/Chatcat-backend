@@ -318,11 +318,13 @@ io.on("connection", (socket) => {
       return;
     }
 
-    room.roomPassword = data.roomPassword;
+    let currentRoomPassword = room.roomPassword;
+    let newRoomPassword = aUtils.fourLetterWord(currentRoomPassword);
+    room.roomPassword = newRoomPassword;
 
     io.in(data.roomName).emit("Room password updated", {
-      roomPassword: data.roomPassword,
-      roomName: data.roomName,
+      roomPassword: room.roomPassword,
+      roomName: room.roomName,
     });
   });
 
@@ -429,10 +431,15 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     return;
   }
 
-  if (room.roomPassword && room.roomPassword !== roomPassword) {
-    console.log("€ Entry denied. Password incorrect.");
+  if (isRoomboss) {
+    roomPassword = aUtils.fourLetterWord();
+    room.roomPassword = roomPassword;
+  } else if (room.roomPassword && room.roomPassword !== roomPassword) {
+    console.log(
+      `€ Entry denied. Password ${roomPassword} for ${roomName} was incorrect, the password was actually ${room.roomPassword}.`
+    );
     socket.emit("Entry denied", {
-      msg: `Password ${roomPassword} for ${roomName} was incorrect.`, //omega Adjust this msg to be less revealing.
+      msg: `Password ${roomPassword} for ${roomName} was incorrect.`,
     });
     return;
   }
@@ -467,6 +474,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   socket.emit("Entry granted", {
     room: room.trim(),
     player,
+    roomPassword: isRoomboss ? roomPassword : null,
   });
 
   socket.to(room.roomName).emit("Player entered your room", {
