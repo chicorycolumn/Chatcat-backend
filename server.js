@@ -339,6 +339,38 @@ io.on("connection", (socket) => {
     socket.leave(data.roomName);
   });
 
+  socket.on("Wipe game stats", function (data) {
+    console.log(`ø Wipe game stats <${socket.id.slice(0, 4)}>`);
+
+    let room = rooms.find((room) => room.roomName === data.roomName);
+
+    if (!room) {
+      console.log(`Cannot wipe. Room ${data.roomName} not found.`);
+      return;
+    }
+
+    let player = room.players.find(
+      (roomPlayer) => roomPlayer.socketId === socket.id
+    );
+
+    if (!player || !player.isRoomboss) {
+      console.log(
+        `Cannot wipe. Player either not in room ${data.roomName} or is not roomBoss.`
+      );
+      return;
+    }
+
+    room.players.forEach((playe) => {
+      resetPlayerGameStats(playe);
+    });
+
+    updatePlayersWithRoomData(
+      data.roomName,
+      room,
+      "The roomboss has wiped the game stats"
+    );
+  });
+
   function roomsBySocket() {
     return [...io.sockets.adapter.rooms.entries()];
   }
@@ -362,7 +394,7 @@ function isSocketActive(io, socketId) {
   return activeSocketIds.includes(socketId);
 }
 
-function updatePlayersWithRoomData(roomName, room) {
+function updatePlayersWithRoomData(roomName, room, chatMsg) {
   if (!roomName) {
     console.log("L51");
     return;
@@ -373,6 +405,9 @@ function updatePlayersWithRoomData(roomName, room) {
   }
 
   io.in(roomName).emit("Room data", { room: room.trim() });
+  if (chatMsg) {
+    io.in(roomName).emit("Chat message", { chatMsg });
+  }
 }
 
 function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
@@ -418,7 +453,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     console.log(
       `Wiping player stats for ${player.playerName}${player.truePlayerName} as they are entering a new room, ie not re-entering.`
     );
-    resetPlayerGameStats(player);
+    resetPlayerGameStats(player, true);
   }
 
   aUtils.suffixPlayerNameIfNecessary(room, player);
@@ -446,8 +481,11 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   );
 }
 
-function resetPlayerGameStats(player) {
+function resetPlayerGameStats(player, resetIsRoombossProperty) {
   Object.keys(player.gameStatProperties).forEach((gameStatKey) => {
+    if (gameStatKey === "isRoomboss" && !resetIsRoombossProperty) {
+      return;
+    }
     let gameStatDefaultValue = player.gameStatProperties[gameStatKey];
     player[gameStatKey] = gameStatDefaultValue;
   });
@@ -541,7 +579,7 @@ function makePlayerLeaveRoom(io, socket, leavingPlayer, roomName) {
             `Wiping player stats for ${playe.playerName}${playe.truePlayerName} as they're still active.`
           );
           console.log("This player was:", playe);
-          resetPlayerGameStats(playe);
+          resetPlayerGameStats(playe, true);
           console.log("This player now:", playe);
         }
       }
