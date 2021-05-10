@@ -124,6 +124,42 @@ io.on("connection", (socket) => {
 
   socket.on("disconnecting", (data) => {});
 
+  socket.on("Query room password protection", function (data) {
+    console.log("Ø Query room password protection");
+
+    let room = rooms.find((roo) => roo.roomName === data.roomName);
+
+    if (!room) {
+      console.log(`Y28 No such room ${data.roomName}`);
+      socket.emit("Room not created or found", {
+        msg: `Room ${data.roomName} does not exist.`,
+      });
+      return;
+    }
+
+    if (data.amLeaving) {
+      console.log(
+        `Removed ${socket.id.slice(0, 4)} from the door of ${room.roomName}.`
+      );
+      room.playersAtTheDoor = room.playersAtTheDoor.filter(
+        (socketId) => socketId !== socket.id
+      );
+      return;
+    }
+
+    if (!room.playersAtTheDoor.includes(socket.id)) {
+      console.log(
+        `Added ${socket.id.slice(0, 4)} to the door of ${room.roomName}.`
+      );
+      room.playersAtTheDoor.push(socket.id);
+    }
+
+    socket.emit("Queried room password protection", {
+      roomName: room.roomName,
+      isPasswordProtected: room.isPasswordProtected,
+    });
+  });
+
   socket.on("disconnect", (data) => {
     console.log(
       `ø disconnect <${socket.id.slice(
@@ -194,7 +230,7 @@ io.on("connection", (socket) => {
 
     if (!putativeRoomName) {
       console.log("€ Room not created");
-      socket.emit("Room not created", {
+      socket.emit("Room not created or found", {
         msg: `Please supply a room name.`,
       });
       return;
@@ -205,7 +241,7 @@ io.on("connection", (socket) => {
       rooms.find((room) => room.roomName === putativeRoomName)
     ) {
       console.log("€ Room not created");
-      socket.emit("Room not created", {
+      socket.emit("Room not created or found", {
         msg: `Room ${putativeRoomName} already exists.`,
       });
       return;
@@ -339,6 +375,13 @@ io.on("connection", (socket) => {
     io.in(data.roomName).emit("Room password updated", {
       roomPassword: room.roomPassword,
       roomName: room.roomName,
+    });
+
+    room.playersAtTheDoor.forEach((socketId) => {
+      io.in(socketId).emit("Queried room password protection", {
+        roomName: room.roomName,
+        isPasswordProtected: room.isPasswordProtected,
+      });
     });
   });
 
@@ -486,6 +529,17 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   socket.join(room.roomName);
 
   player.mostRecentRoom = room.roomName;
+
+  console.log(
+    `Removing ${socket.id.slice(0, 4)} from the door of ${
+      room.roomName
+    } if they are.`
+  );
+  console.log("room.playersAtTheDoor was", room.playersAtTheDoor);
+  room.playersAtTheDoor = room.playersAtTheDoor.filter(
+    (socketId) => socketId !== socket.id
+  );
+  console.log("room.playersAtTheDoor now", room.playersAtTheDoor);
 
   socket.emit("Entry granted", {
     room: room.trim(),

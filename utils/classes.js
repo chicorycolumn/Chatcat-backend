@@ -4,6 +4,7 @@ class Room {
     this.roomPassword = "";
     this.isPasswordProtected = false;
     this.players = players || [];
+    this.playersAtTheDoor = [];
   }
 
   trim() {
