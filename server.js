@@ -218,7 +218,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let room = new Room(putativeRoomName, data.roomPassword);
+    let room = new Room(putativeRoomName);
     rooms.push(room);
 
     makePlayerEnterRoom(socket, player, data, room, true);
@@ -321,10 +321,14 @@ io.on("connection", (socket) => {
     if (data.flipPasswordProtection) {
       if (room.isPasswordProtected) {
         room.isPasswordProtected = false;
-        room.roomPassword = null;
+        room.roomPassword = "";
+        console.log(`Room ${room.roomName} is now NOT password protected.`);
       } else {
         room.isPasswordProtected = true;
         room.roomPassword = aUtils.fourLetterWord();
+        console.log(
+          `Room ${room.roomName} is now INDEED password protected ${room.roomPassword}.`
+        );
       }
       io.in(data.roomName).emit("Room data", { room: room.trim() });
     } else {
@@ -441,10 +445,12 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
     return;
   }
 
-  if (isRoomboss) {
-    roomPassword = aUtils.fourLetterWord();
-    room.roomPassword = roomPassword;
-  } else if (room.roomPassword && room.roomPassword !== roomPassword) {
+  if (room.isPasswordProtected && room.roomPassword !== roomPassword) {
+    if (!room.roomPassword) {
+      console.log(
+        "H44 This room is password protected yet there's no password?"
+      );
+    }
     console.log(
       `€ Entry denied. Password ${roomPassword} for ${roomName} was incorrect, the password was actually ${room.roomPassword}.`
     );

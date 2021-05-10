@@ -1,8 +1,8 @@
 class Room {
   constructor(roomName, roomPassword, players) {
     this.roomName = roomName;
-    this.roomPassword = roomPassword;
-    this.isPasswordProtected = !!this.roomPassword;
+    this.roomPassword = "";
+    this.isPasswordProtected = false;
     this.players = players || [];
   }
 
