@@ -137,7 +137,7 @@ io.on("connection", (socket) => {
     if (!room) {
       console.log(`Y28 No such room ${data.roomName}`);
       socket.emit("Room not created or found", {
-        msg: `Room ${data.roomName} does not exist.`,
+        msg: { text: `Room ${data.roomName} does not exist.`, emotion: "sad" },
       });
       return;
     }
@@ -235,7 +235,7 @@ io.on("connection", (socket) => {
     if (!putativeRoomName) {
       console.log("€ Room not created");
       socket.emit("Room not created or found", {
-        msg: `Please supply a room name.`,
+        msg: { text: `Please supply a room name.`, emotion: "sad" },
       });
       return;
     }
@@ -246,7 +246,10 @@ io.on("connection", (socket) => {
     ) {
       console.log("€ Room not created");
       socket.emit("Room not created or found", {
-        msg: `Room ${putativeRoomName} already exists.`,
+        msg: {
+          text: `Room ${putativeRoomName} already exists.`,
+          emotion: "sad",
+        },
       });
       return;
     }
@@ -488,7 +491,9 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
 
   if (!room) {
     console.log("€ Entry denied. Room not found.");
-    socket.emit("Entry denied", { msg: `Room ${roomName} not found.` });
+    socket.emit("Entry denied", {
+      msg: { text: `Room ${roomName} not found.`, emotion: "sad" },
+    });
     return;
   }
 
@@ -502,7 +507,10 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
       `€ Entry denied. Password ${roomPassword} for ${roomName} was incorrect, the password was actually ${room.roomPassword}.`
     );
     socket.emit("Entry denied", {
-      msg: `Password ${roomPassword} for ${roomName} was incorrect.`,
+      msg: {
+        text: `Password ${roomPassword} for ${roomName} was incorrect.`,
+        emotion: "sad",
+      },
     });
     return;
   }
@@ -514,7 +522,10 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
       `€ Entry denied. ${player.playerName}${player.truePlayerName} already in ${room.roomName}.`
     );
     socket.emit("Entry denied", {
-      msg: `I believe you are already in room ${room.roomName}. Perhaps in another tab?`,
+      msg: {
+        text: `I believe you are already in room ${room.roomName}. Perhaps in another tab?`,
+        emotion: "sad",
+      },
     });
     return;
   }
@@ -682,7 +693,7 @@ function makePlayerLeaveRoom(io, socket, leavingPlayer, roomName) {
 
     socket.to(newRoomboss.socketId).emit("Player loaded", {
       player: newRoomboss,
-      msg: "You are now the roomboss.",
+      msg: { text: "You are now the roomboss.", emotion: "happy" },
     });
   }
 
@@ -697,7 +708,10 @@ function makePlayerLeaveRoom(io, socket, leavingPlayer, roomName) {
       `€ You're booted ${leavingPlayer.playerName}${leavingPlayer.truePlayerName}`
     );
     socket.to(leavingPlayer.socketId).emit("You're booted", {
-      msg: `You've been booted from ${room.roomName}.`,
+      msg: {
+        text: `You've been booted from ${room.roomName}.`,
+        emotion: "sad",
+      },
       roomName: room.roomName,
     });
     io.in(room.roomName)
