@@ -24,10 +24,9 @@ const players = [];
 
 io.on("connection", (socket) => {
   console.log(
-    `ø connection <${socket.id.slice(
-      0,
-      4
-    )}> at ${new Date().toUTCString().slice(17, -4)}.`
+    `ø connection <${socket.id.slice(0, 4)}> at ${new Date()
+      .toUTCString()
+      .slice(17, -4)}.`
   );
 
   socket.on("Dev destroy all", function () {
@@ -125,9 +124,15 @@ io.on("connection", (socket) => {
   socket.on("disconnecting", (data) => {});
 
   socket.on("Query room password protection", function (data) {
-    console.log("Ø Query room password protection");
-
     let room = rooms.find((roo) => roo.roomName === data.roomName);
+
+    if (room && room.players.find((playe) => playe.socketId === socket.id)) {
+      console.log("Client sent QRPP while bypassing Door, so ignore.");
+      //Because Door is loaded-unloaded briefly when player goes straight from Lobby to Room.
+      return;
+    }
+
+    console.log("Ø Query room password protection");
 
     if (!room) {
       console.log(`Y28 No such room ${data.roomName}`);
@@ -139,7 +144,7 @@ io.on("connection", (socket) => {
 
     if (data.amLeaving) {
       console.log(
-        `Removed ${socket.id.slice(0, 4)} from the door of ${room.roomName}.`
+        `Removed <${socket.id.slice(0, 4)}> from the door of ${room.roomName}.`
       );
       room.playersAtTheDoor = room.playersAtTheDoor.filter(
         (socketId) => socketId !== socket.id
@@ -149,7 +154,7 @@ io.on("connection", (socket) => {
 
     if (!room.playersAtTheDoor.includes(socket.id)) {
       console.log(
-        `Added ${socket.id.slice(0, 4)} to the door of ${room.roomName}.`
+        `Added <${socket.id.slice(0, 4)}> to the door of ${room.roomName}.`
       );
       room.playersAtTheDoor.push(socket.id);
     }
@@ -162,10 +167,9 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", (data) => {
     console.log(
-      `ø disconnect <${socket.id.slice(
-        0,
-        4
-      )}> disconnected at ${new Date().toUTCString().slice(17, -4)}.`
+      `ø disconnect <${socket.id.slice(0, 4)}> disconnected at ${new Date()
+        .toUTCString()
+        .slice(17, -4)}.`
     );
     let player = players.find((playe) => playe.socketId === socket.id);
     if (!player) {
@@ -531,7 +535,7 @@ function makePlayerEnterRoom(socket, player, sentData, room, isRoomboss) {
   player.mostRecentRoom = room.roomName;
 
   console.log(
-    `Removing ${socket.id.slice(0, 4)} from the door of ${
+    `Removing <${socket.id.slice(0, 4)}> from the door of ${
       room.roomName
     } if they are.`
   );
