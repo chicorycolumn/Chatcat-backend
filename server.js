@@ -191,22 +191,13 @@ io.on("connection", (socket) => {
     let mostRecentRoom = rooms.find(
       (roo) => roo.roomName === player.mostRecentRoom
     );
-    console.log(
-      "players arr was",
-      players.map((playe) => playe.playerName)
-    );
     if (!mostRecentRoom) {
       dataUtils.deleteFromArray(players, { socketId: player.socketId });
     }
-    console.log(
-      "players arr now",
-      players.map((playe) => playe.playerName)
-    );
   });
 
   socket.on("Chat message", function (data) {
     console.log(`ø Chat message <${socket.id.slice(0, 4)}>`);
-    console.log("rooms arr is currently:", rooms);
 
     let roomName = roomNameBySocket(socket);
 
@@ -243,7 +234,7 @@ io.on("connection", (socket) => {
     );
 
     if (!putativeRoomName) {
-      console.log("€ Room not created");
+      console.log("€ Room not created - bad putative name");
       socket.emit("Room not created or found", {
         msg: { text: `Please supply a room name.`, emotion: "sad" },
       });
@@ -254,7 +245,7 @@ io.on("connection", (socket) => {
       dataUtils.bannedRoomNames.includes(putativeRoomName) ||
       rooms.find((room) => room.roomName === putativeRoomName)
     ) {
-      console.log("€ Room not created");
+      console.log("€ Room not created - already exists");
       socket.emit("Room not created or found", {
         msg: {
           text: `Room ${putativeRoomName} already exists.`,
@@ -271,11 +262,8 @@ io.on("connection", (socket) => {
       return;
     }
 
-    console.log("Rooms arr was:", rooms);
-    console.log("Creating a new room called:", putativeRoomName);
     let room = new Room(putativeRoomName);
     rooms.push(room);
-    console.log("Rooms arr now:", rooms);
 
     socketUtils.makePlayerEnterRoom(socket, rooms, player, data, room, true);
   });
@@ -385,13 +373,9 @@ io.on("connection", (socket) => {
       if (room.isPasswordProtected) {
         room.isPasswordProtected = false;
         room.roomPassword = "";
-        console.log(`Room ${room.roomName} is now NOT password protected.`);
       } else {
         room.isPasswordProtected = true;
         room.roomPassword = dataUtils.fourLetterWord();
-        console.log(
-          `Room ${room.roomName} is now INDEED password protected ${room.roomPassword}.`
-        );
       }
       io.in(data.roomName).emit("Room data", { room: room.trim() });
     } else {
@@ -471,7 +455,6 @@ io.on("connection", (socket) => {
   }
 
   function roomNameBySocket(socket) {
-    console.log("roomsBySocket()", roomsBySocket());
     let roomNameObj = roomsBySocket().find(
       (subArr) => subArr[0] !== socket.id && subArr[1].has(socket.id)
     );

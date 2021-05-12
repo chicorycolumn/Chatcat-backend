@@ -146,9 +146,6 @@ exports.makePlayerLeaveRoom = (
   leavingPlayer,
   roomName
 ) => {
-  console.log("\n");
-  console.log("* * *");
-  console.log("\n");
   console.log(
     `<${socket.id.slice(0, 4)}> Leave room for ${leavingPlayer.playerName}${
       leavingPlayer.truePlayerName
@@ -201,13 +198,8 @@ exports.makePlayerLeaveRoom = (
   );
 
   if (room.players.length === 1) {
-    console.log("\n");
-    console.log(
-      "Rooms array was",
-      rooms.map((roo) => roo.roomName)
-    );
-
     console.log("Delete this Room as its only player has left.");
+    socket.leave(room.roomName);
     dataUtils.deleteFromArray(rooms, { roomName: room.roomName });
 
     console.log(
@@ -238,7 +230,6 @@ exports.makePlayerLeaveRoom = (
         }
       }
     });
-    console.log("\n");
     return;
   }
 
@@ -283,8 +274,4 @@ exports.makePlayerLeaveRoom = (
         isBoot: true,
       });
   }
-
-  console.log("\n");
-  console.log("* *");
-  console.log("\n");
 };
